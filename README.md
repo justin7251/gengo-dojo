@@ -14,12 +14,10 @@ The app teaches users using flashcards, quizzes, and spaced repetition.
 - Firebase backend
 
 ## Tech Stack
-- Flutter (Mobile App)
+- Next js
 - Firebase Auth
 - Firestore Database
-- Firebase Functions
 - GROQ API
-- Firebase Cloud Messaging
 
 ## Firestore Structure
 users/{userId}
