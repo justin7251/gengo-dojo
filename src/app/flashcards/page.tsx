@@ -1,0 +1,344 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuth } from '@/lib/auth';
+import { getWords, getProgress, rateWord } from '@/lib/firestore';
+import { Word, Progress, Rating } from '@/lib/types';
+import { isDue } from '@/lib/srs';
+import AuthGuard from '@/components/AuthGuard';
+
+export default function FlashcardsPage() {
+  return (
+    <AuthGuard>
+      <Flashcards />
+    </AuthGuard>
+  );
+}
+
+function Flashcards() {
+  const router = useRouter();
+  const [uid, setUid]           = useState('');
+  const [queue, setQueue]       = useState<Word[]>([]);
+  const [progress, setProgress] = useState<Record<string, Progress>>({});
+  const [idx, setIdx]           = useState(0);
+  const [flipped, setFlipped]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [rating, setRating]     = useState(false);
+  const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0 });
+  const [done, setDone]         = useState(false);
+
+  useEffect(() => {
+    return onAuth(async (user) => {
+      if (!user) return;
+      setUid(user.uid);
+      const [words, prog] = await Promise.all([
+        getWords(user.uid),
+        getProgress(user.uid),
+      ]);
+      setProgress(prog);
+      // Prioritise due words, then fill with rest
+      const due   = words.filter(w => prog[w.id] && isDue(prog[w.id]));
+      const rest  = words.filter(w => !prog[w.id] || !isDue(prog[w.id]));
+      const shuffled = [...due, ...rest].sort(() => Math.random() - 0.5);
+      setQueue(shuffled);
+      setLoading(false);
+    });
+  }, []);
+
+  const current = queue[idx];
+  const pct     = queue.length ? Math.round((idx / queue.length) * 100) : 0;
+
+  function flip() {
+    if (!flipped) setFlipped(true);
+  }
+
+  async function handleRate(r: Rating) {
+    if (!current || rating) return;
+    setRating(true);
+    const prev = progress[current.id];
+    if (prev) {
+      await rateWord(uid, current.id, r, prev);
+      setSessionStats(s => ({
+        correct: r !== 'wrong' ? s.correct + 1 : s.correct,
+        wrong:   r === 'wrong' ? s.wrong + 1   : s.wrong,
+      }));
+    }
+    const next = idx + 1;
+    if (next >= queue.length) {
+      setDone(true);
+    } else {
+      setIdx(next);
+      setFlipped(false);
+    }
+    setRating(false);
+  }
+
+  // ── Loading ───────────────────────────────────────────
+  if (loading) {
+    return (
+      <Shell onBack={() => router.push('/dashboard')}>
+        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+          <Spinner />
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Empty ─────────────────────────────────────────────
+  if (!queue.length) {
+    return (
+      <Shell onBack={() => router.push('/dashboard')}>
+        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+          <div style={{ fontSize: '40px', marginBottom: '1rem' }}>📭</div>
+          <p style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>No words yet</p>
+          <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1.5rem' }}>
+            Generate some vocabulary from the dashboard first.
+          </p>
+          <button className="btn btn-primary" onClick={() => router.push('/dashboard')}>
+            Go to dashboard
+          </button>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Session complete ──────────────────────────────────
+  if (done) {
+    const total = sessionStats.correct + sessionStats.wrong;
+    const pctCorrect = total ? Math.round((sessionStats.correct / total) * 100) : 0;
+    return (
+      <Shell onBack={() => router.push('/dashboard')}>
+        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+          <div style={{ fontSize: '48px', marginBottom: '1rem' }}>
+            {pctCorrect >= 80 ? '🏆' : pctCorrect >= 50 ? '💪' : '📖'}
+          </div>
+          <h2 style={{ fontSize: '22px', fontWeight: 600, marginBottom: '8px' }}>
+            Session complete
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem' }}>
+            {sessionStats.correct} correct · {sessionStats.wrong} again
+          </p>
+
+          {/* Score bar */}
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="progress-track" style={{ height: '8px', borderRadius: '4px' }}>
+              <div className="progress-fill" style={{
+                width: `${pctCorrect}%`,
+                height: '8px',
+                borderRadius: '4px',
+                background: pctCorrect >= 80 ? 'var(--teal)' : pctCorrect >= 50 ? '#EF9F27' : '#E24B4A',
+              }} />
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>
+              {pctCorrect}% accuracy
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={() => {
+              setIdx(0); setFlipped(false);
+              setDone(false); setSessionStats({ correct: 0, wrong: 0 });
+            }}>
+              Study again
+            </button>
+            <button className="btn" onClick={() => router.push('/dashboard')}>
+              Dashboard
+            </button>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Flashcard ─────────────────────────────────────────
+  return (
+    <Shell onBack={() => router.push('/dashboard')}>
+
+      {/* Progress bar */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '12px',
+          color: 'var(--muted)',
+          marginBottom: '6px',
+        }}>
+          <span>{idx + 1} / {queue.length}</span>
+          <span>{pct}%</span>
+        </div>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      {/* Topic pill */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <span className="pill pill-gray">{current.topic}</span>
+        <span className="pill pill-blue" style={{ marginLeft: '6px' }}>{current.type}</span>
+      </div>
+
+      {/* Card */}
+      <div
+        onClick={flip}
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          padding: '2.5rem 2rem',
+          textAlign: 'center',
+          cursor: flipped ? 'default' : 'pointer',
+          minHeight: '260px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background 0.2s',
+          marginBottom: '1.5rem',
+          userSelect: 'none',
+        }}
+      >
+        {/* Front: kanji only */}
+        <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '12px' }}>
+          {current.kanji}
+        </div>
+
+        {!flipped ? (
+          <p style={{ fontSize: '13px', color: 'var(--muted)' }}>tap to reveal</p>
+        ) : (
+          <div style={{ animation: 'fadeIn 0.2s ease' }}>
+            <p style={{ fontSize: '18px', color: 'var(--muted)', marginBottom: '4px' }}>
+              {current.reading}
+              {current.romanization && (
+                <span style={{ fontSize: '14px', marginLeft: '8px' }}>
+                  · {current.romanization}
+                </span>
+              )}
+            </p>
+            <p style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
+              {current.meaning}
+            </p>
+            <div style={{
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              color: 'var(--muted)',
+              lineHeight: 1.6,
+              maxWidth: '360px',
+            }}>
+              {current.example}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Rating buttons — only show after flip */}
+      {flipped && (
+        <div style={{ animation: 'fadeIn 0.2s ease' }}>
+          <p style={{
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--muted)',
+            fontWeight: 500,
+            textAlign: 'center',
+            marginBottom: '10px',
+          }}>
+            How did you do?
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            {([
+              { r: 'wrong', label: 'Again',  sub: '1d',  color: '#E24B4A', bg: '#FCEBEB' },
+              { r: 'hard',  label: 'Hard',   sub: '3d',  color: '#BA7517', bg: '#FAEEDA' },
+              { r: 'good',  label: 'Good',   sub: '7d',  color: 'var(--teal-dark)', bg: 'var(--teal-light)' },
+              { r: 'easy',  label: 'Easy',   sub: '30d', color: '#185FA5', bg: '#E6F1FB' },
+            ] as { r: Rating; label: string; sub: string; color: string; bg: string }[]).map(({ r, label, sub, color, bg }) => (
+              <button
+                key={r}
+                disabled={rating}
+                onClick={() => handleRate(r)}
+                style={{
+                  padding: '10px 0',
+                  border: `1px solid ${color}`,
+                  borderRadius: '10px',
+                  background: bg,
+                  color,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  transition: 'opacity 0.15s',
+                  opacity: rating ? 0.5 : 1,
+                }}
+              >
+                <span>{label}</span>
+                <span style={{ fontSize: '11px', opacity: 0.7 }}>{sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </Shell>
+  );
+}
+
+// ── Reusable shell ────────────────────────────────────
+function Shell({ children, onBack }: {
+  children: React.ReactNode;
+  onBack: () => void;
+}) {
+  return (
+    <main style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '2rem 1rem 4rem',
+      background: 'var(--bg)',
+    }}>
+      <div style={{ width: '100%', maxWidth: '680px', display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>
+          ← Back
+        </button>
+        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem', letterSpacing: '-0.02em' }}>
+          言語道場
+        </span>
+      </div>
+
+      <div style={{
+        width: '100%',
+        maxWidth: '680px',
+        background: 'var(--bg)',
+        border: '1px solid var(--border)',
+        borderRadius: '20px',
+        padding: '2.5rem',
+      }}>
+        {children}
+      </div>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+      `}</style>
+    </main>
+  );
+}
+
+function Spinner() {
+  return (
+    <div style={{
+      width: '24px', height: '24px',
+      border: '2px solid var(--border)',
+      borderTopColor: 'var(--muted)',
+      borderRadius: '50%',
+      animation: 'spin 0.7s linear infinite',
+      margin: '0 auto',
+    }} />
+  );
+}
