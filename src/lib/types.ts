@@ -5,6 +5,7 @@ export interface Word {
   romanization: string;
   meaning: string;
   example: string;
+  example_translation: string;
   type: 'noun' | 'verb' | 'adjective' | 'other';
   topic: string;
   lang: 'ja' | 'zh';
