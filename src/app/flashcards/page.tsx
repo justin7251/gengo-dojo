@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getWords, getProgress, rateWord } from '@/lib/firestore';
+import { getWords, getProgress, rateWord, getUserProfile } from '@/lib/firestore';
 import { Word, Progress, Rating } from '@/lib/types';
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
@@ -16,30 +16,52 @@ export default function FlashcardsPage() {
   );
 }
 
+type RevealStep = 'kanji' | 'meaning' | 'example';
+
+function speak(text: string, lang: string) {
+  if (typeof window === 'undefined') return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === 'ja' ? 'ja-JP' : 'zh-CN';
+  utter.rate = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const native = voices.find(v => v.lang.startsWith(lang === 'ja' ? 'ja' : 'zh'));
+  if (native) utter.voice = native;
+  window.speechSynthesis.speak(utter);
+}
+
 function Flashcards() {
   const router = useRouter();
-  const [uid, setUid]           = useState('');
-  const [queue, setQueue]       = useState<Word[]>([]);
-  const [progress, setProgress] = useState<Record<string, Progress>>({});
-  const [idx, setIdx]           = useState(0);
-  const [flipped, setFlipped]   = useState(false);
-  const [loading, setLoading]   = useState(true);
-  const [rating, setRating]     = useState(false);
+  const [uid, setUid]                   = useState('');
+  const [lang, setLang]                 = useState<'ja' | 'zh'>('ja');
+  const [queue, setQueue]               = useState<Word[]>([]);
+  const [progress, setProgress]         = useState<Record<string, Progress>>({});
+  const [idx, setIdx]                   = useState(0);
+  const [reveal, setReveal]             = useState<RevealStep>('kanji');
+  const [loading, setLoading]           = useState(true);
+  const [rating, setRating]             = useState(false);
+  const [speaking, setSpeaking]         = useState(false);
   const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0 });
-  const [done, setDone]         = useState(false);
+  const [done, setDone]                 = useState(false);
+
+  useEffect(() => {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }, []);
 
   useEffect(() => {
     return onAuth(async (user) => {
       if (!user) return;
       setUid(user.uid);
-      const [words, prog] = await Promise.all([
+      const [profile, words, prog] = await Promise.all([
+        getUserProfile(user.uid),
         getWords(user.uid),
         getProgress(user.uid),
       ]);
+      setLang(profile?.lang ?? 'ja');
       setProgress(prog);
-      // Prioritise due words, then fill with rest
-      const due   = words.filter(w => prog[w.id] && isDue(prog[w.id]));
-      const rest  = words.filter(w => !prog[w.id] || !isDue(prog[w.id]));
+      const due     = words.filter(w => prog[w.id] && isDue(prog[w.id]));
+      const rest    = words.filter(w => !prog[w.id] || !isDue(prog[w.id]));
       const shuffled = [...due, ...rest].sort(() => Math.random() - 0.5);
       setQueue(shuffled);
       setLoading(false);
@@ -49,8 +71,16 @@ function Flashcards() {
   const current = queue[idx];
   const pct     = queue.length ? Math.round((idx / queue.length) * 100) : 0;
 
-  function flip() {
-    if (!flipped) setFlipped(true);
+  function handleSpeak(text?: string) {
+    if (!current) return;
+    setSpeaking(true);
+    speak(text ?? current.kanji, lang);
+    setTimeout(() => setSpeaking(false), 1200);
+  }
+
+  function handleRevealMeaning() {
+    setReveal('meaning');
+    speak(current.kanji, lang);
   }
 
   async function handleRate(r: Rating) {
@@ -69,7 +99,7 @@ function Flashcards() {
       setDone(true);
     } else {
       setIdx(next);
-      setFlipped(false);
+      setReveal('kanji');
     }
     setRating(false);
   }
@@ -78,9 +108,7 @@ function Flashcards() {
   if (loading) {
     return (
       <Shell onBack={() => router.push('/dashboard')}>
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <Spinner />
-        </div>
+        <div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div>
       </Shell>
     );
   }
@@ -93,7 +121,7 @@ function Flashcards() {
           <div style={{ fontSize: '40px', marginBottom: '1rem' }}>📭</div>
           <p style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>No words yet</p>
           <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1.5rem' }}>
-            Generate some vocabulary from the dashboard first.
+            Generate vocabulary from the dashboard first.
           </p>
           <button className="btn btn-primary" onClick={() => router.push('/dashboard')}>
             Go to dashboard
@@ -105,7 +133,7 @@ function Flashcards() {
 
   // ── Session complete ──────────────────────────────────
   if (done) {
-    const total = sessionStats.correct + sessionStats.wrong;
+    const total      = sessionStats.correct + sessionStats.wrong;
     const pctCorrect = total ? Math.round((sessionStats.correct / total) * 100) : 0;
     return (
       <Shell onBack={() => router.push('/dashboard')}>
@@ -119,8 +147,6 @@ function Flashcards() {
           <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem' }}>
             {sessionStats.correct} correct · {sessionStats.wrong} again
           </p>
-
-          {/* Score bar */}
           <div style={{ marginBottom: '2rem' }}>
             <div className="progress-track" style={{ height: '8px', borderRadius: '4px' }}>
               <div className="progress-fill" style={{
@@ -134,10 +160,9 @@ function Flashcards() {
               {pctCorrect}% accuracy
             </p>
           </div>
-
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button className="btn btn-primary" onClick={() => {
-              setIdx(0); setFlipped(false);
+              setIdx(0); setReveal('kanji');
               setDone(false); setSessionStats({ correct: 0, wrong: 0 });
             }}>
               Study again
@@ -151,18 +176,15 @@ function Flashcards() {
     );
   }
 
-  // ── Flashcard ─────────────────────────────────────────
+  // ── Main flashcard ────────────────────────────────────
   return (
     <Shell onBack={() => router.push('/dashboard')}>
 
       {/* Progress bar */}
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '12px',
-          color: 'var(--muted)',
-          marginBottom: '6px',
+          display: 'flex', justifyContent: 'space-between',
+          fontSize: '12px', color: 'var(--muted)', marginBottom: '6px',
         }}>
           <span>{idx + 1} / {queue.length}</span>
           <span>{pct}%</span>
@@ -172,71 +194,197 @@ function Flashcards() {
         </div>
       </div>
 
-      {/* Topic pill */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      {/* Topic + type pills */}
+      <div style={{ marginBottom: '1.25rem' }}>
         <span className="pill pill-gray">{current.topic}</span>
         <span className="pill pill-blue" style={{ marginLeft: '6px' }}>{current.type}</span>
       </div>
 
-      {/* Card */}
-      <div
-        onClick={flip}
-        style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '16px',
-          padding: '2.5rem 2rem',
-          textAlign: 'center',
-          cursor: flipped ? 'default' : 'pointer',
-          minHeight: '260px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background 0.2s',
-          marginBottom: '1.5rem',
-          userSelect: 'none',
-        }}
-      >
-        {/* Front: kanji only */}
-        <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '12px' }}>
-          {current.kanji}
-        </div>
+      {/* 🔊 Voice button row — outside card, always visible */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <button
+          onClick={() => handleSpeak()}
+          title="Play pronunciation"
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: '1px solid #444',
+            background: speaking ? '#0F6E56' : '#2a2a2a',
+            cursor: 'pointer',
+            fontSize: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          🔊
+        </button>
+      </div>
 
-        {!flipped ? (
-          <p style={{ fontSize: '13px', color: 'var(--muted)' }}>tap to reveal</p>
+      {/* ── Card ── */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '20px',
+        padding: '2.5rem 2rem',
+        textAlign: 'center',
+        minHeight: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '1.5rem',
+      }}>
+
+        {/* Kanji */}
+        {current.kanji ? (
+          <div style={{
+            fontSize: '80px',
+            lineHeight: 1,
+            marginBottom: '12px',
+            fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
+          }}>
+            {current.kanji}
+          </div>
         ) : (
-          <div style={{ animation: 'fadeIn 0.2s ease' }}>
-            <p style={{ fontSize: '18px', color: 'var(--muted)', marginBottom: '4px' }}>
-              {current.reading}
-              {current.romanization && (
-                <span style={{ fontSize: '14px', marginLeft: '8px' }}>
-                  · {current.romanization}
-                </span>
-              )}
-            </p>
-            <p style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
-              {current.meaning}
-            </p>
+          <div style={{
+            fontSize: '14px',
+            color: '#A32D2D',
+            marginBottom: '12px',
+            padding: '8px 12px',
+            background: '#FCEBEB',
+            borderRadius: '8px',
+          }}>
+            ⚠️ Regenerate this word from the dashboard
+          </div>
+        )}
+
+        {/* Reading */}
+        <p style={{ fontSize: '16px', color: 'var(--muted)', marginBottom: '20px' }}>
+          {current.reading}
+          {current.romanization && (
+            <span style={{ fontSize: '13px', marginLeft: '8px' }}>
+              · {current.romanization}
+            </span>
+          )}
+        </p>
+
+        {/* Step 1: Reveal meaning button */}
+        {reveal === 'kanji' && (
+          <button
+            className="btn btn-primary"
+            onClick={handleRevealMeaning}
+            style={{ marginTop: '4px' }}
+          >
+            Reveal meaning
+          </button>
+        )}
+
+        {/* Step 2 + 3: Meaning and example */}
+        {reveal !== 'kanji' && (
+          <div style={{ animation: 'fadeIn 0.2s ease', width: '100%' }}>
+
+            {/* Meaning box */}
             <div style={{
+              fontSize: '24px',
+              fontWeight: 600,
+              marginBottom: '16px',
+              padding: '12px 20px',
               background: 'var(--bg)',
+              borderRadius: '12px',
               border: '1px solid var(--border)',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              fontSize: '13px',
-              color: 'var(--muted)',
-              lineHeight: 1.6,
-              maxWidth: '360px',
+              display: 'inline-block',
             }}>
-              {current.example}
+              {current.meaning}
             </div>
+
+            {/* Step 2: Show example button */}
+            {reveal === 'meaning' && (
+              <div>
+                <button
+                  className="btn"
+                  style={{ fontSize: '13px' }}
+                  onClick={() => setReveal('example')}
+                >
+                  Show example sentence →
+                </button>
+              </div>
+            )}
+
+            {/* Step 3: Example sentence */}
+            {reveal === 'example' && (
+              <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                <div style={{
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  lineHeight: 1.7,
+                  textAlign: 'left',
+                }}>
+                  {/* Native sentence + 🔊 */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    marginBottom: current.example_translation ? '8px' : '0',
+                  }}>
+                    <span style={{ fontSize: '16px', marginTop: '2px' }}>💬</span>
+                    <span style={{
+                      flex: 1,
+                      color: 'var(--fg)',
+                      fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
+                    }}>
+                      {current.example}
+                    </span>
+                    <button
+                      onClick={() => handleSpeak(current.example)}
+                      title="Play example sentence"
+                      style={{
+                        flexShrink: 0,
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: '1px solid #444',
+                        background: speaking ? '#0F6E56' : '#2a2a2a',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      🔊
+                    </button>
+                  </div>
+
+                  {/* English translation */}
+                  {current.example_translation && (
+                    <div style={{
+                      borderTop: '1px solid var(--border)',
+                      paddingTop: '8px',
+                      fontSize: '13px',
+                      color: 'var(--muted)',
+                      fontStyle: 'italic',
+                      paddingLeft: '24px',
+                    }}>
+                      {current.example_translation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Rating buttons — only show after flip */}
-      {flipped && (
-        <div style={{ animation: 'fadeIn 0.2s ease' }}>
+      {/* SRS rating buttons — show after meaning revealed */}
+      {reveal !== 'kanji' && (
+        <div style={{ animation: 'fadeIn 0.25s ease' }}>
           <p style={{
             fontSize: '11px',
             textTransform: 'uppercase',
@@ -250,10 +398,10 @@ function Flashcards() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
             {([
-              { r: 'wrong', label: 'Again',  sub: '1d',  color: '#E24B4A', bg: '#FCEBEB' },
-              { r: 'hard',  label: 'Hard',   sub: '3d',  color: '#BA7517', bg: '#FAEEDA' },
-              { r: 'good',  label: 'Good',   sub: '7d',  color: 'var(--teal-dark)', bg: 'var(--teal-light)' },
-              { r: 'easy',  label: 'Easy',   sub: '30d', color: '#185FA5', bg: '#E6F1FB' },
+              { r: 'wrong', label: 'Again', sub: '1d',  color: '#E24B4A', bg: '#FCEBEB' },
+              { r: 'hard',  label: 'Hard',  sub: '3d',  color: '#BA7517', bg: '#FAEEDA' },
+              { r: 'good',  label: 'Good',  sub: '7d',  color: '#0F6E56', bg: '#E1F5EE' },
+              { r: 'easy',  label: 'Easy',  sub: '30d', color: '#185FA5', bg: '#E6F1FB' },
             ] as { r: Rating; label: string; sub: string; color: string; bg: string }[]).map(({ r, label, sub, color, bg }) => (
               <button
                 key={r}
@@ -267,13 +415,14 @@ function Flashcards() {
                   color,
                   fontSize: '13px',
                   fontWeight: 500,
-                  cursor: 'pointer',
+                  cursor: rating ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '2px',
-                  transition: 'opacity 0.15s',
                   opacity: rating ? 0.5 : 1,
+                  transition: 'opacity 0.15s',
+                  fontFamily: 'inherit',
                 }}
               >
                 <span>{label}</span>
@@ -288,7 +437,7 @@ function Flashcards() {
   );
 }
 
-// ── Reusable shell ────────────────────────────────────
+// ── Shell ─────────────────────────────────────────────
 function Shell({ children, onBack }: {
   children: React.ReactNode;
   onBack: () => void;
@@ -302,11 +451,22 @@ function Shell({ children, onBack }: {
       padding: '2rem 1rem 4rem',
       background: 'var(--bg)',
     }}>
-      <div style={{ width: '100%', maxWidth: '680px', display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '680px',
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '1.5rem',
+      }}>
         <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>
           ← Back
         </button>
-        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem', letterSpacing: '-0.02em' }}>
+        <span style={{
+          fontSize: '18px',
+          fontWeight: 600,
+          marginLeft: '1rem',
+          letterSpacing: '-0.02em',
+        }}>
           言語道場
         </span>
       </div>
@@ -323,8 +483,11 @@ function Shell({ children, onBack }: {
       </div>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </main>
   );
@@ -333,7 +496,8 @@ function Shell({ children, onBack }: {
 function Spinner() {
   return (
     <div style={{
-      width: '24px', height: '24px',
+      width: '24px',
+      height: '24px',
       border: '2px solid var(--border)',
       borderTopColor: 'var(--muted)',
       borderRadius: '50%',
