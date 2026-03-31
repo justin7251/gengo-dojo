@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getWords, getProgress, rateWord } from '@/lib/firestore';
+import { getWords, getProgress, rateWord, getUserProfile } from '@/lib/firestore';
 import { Word, Progress, Rating } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -49,15 +49,19 @@ function Quiz() {
   const [sessionScore, setSessionScore] = useState({ correct: 0, wrong: 0 });
   const [done, setDone]             = useState(false);
   const [advancing, setAdvancing]   = useState(false);
+  const [lang, setLang] = useState<'ja' | 'zh'>('ja');
+  const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => {
     return onAuth(async (user) => {
       if (!user) return;
       setUid(user.uid);
-      const [words, prog] = await Promise.all([
+      const [profile, words, prog] = await Promise.all([
+        getUserProfile(user.uid),
         getWords(user.uid),
         getProgress(user.uid),
       ]);
+      setLang(profile?.lang ?? 'ja');
       setProgress(prog);
       setQuestions(buildQuestions(words));
       setLoading(false);
@@ -106,6 +110,13 @@ function Quiz() {
     setDone(false);
     setSessionScore({ correct: 0, wrong: 0 });
     setQuestions(qs => buildQuestions(qs.map(q => q.word)));
+  }
+
+  function handleSpeak() {
+    if (!current) return;
+    setSpeaking(true);
+    speak(current.word.kanji, lang);
+    setTimeout(() => setSpeaking(false), 1200);
   }
 
   function choiceStyle(choice: string): React.CSSProperties {
@@ -301,7 +312,34 @@ function Quiz() {
         padding: '2rem',
         textAlign: 'center',
         marginBottom: '1.5rem',
+        position: 'relative',    // ← add
       }}>
+
+        {/* 🔊 inside card top-right */}
+        <button
+          onClick={handleSpeak}
+          title="Play pronunciation"
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: '1px solid #444',
+            background: speaking ? '#0F6E56' : '#2a2a2a',
+            cursor: 'pointer',
+            fontSize: '15px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s',
+            zIndex: 2,
+          }}
+        >
+          🔊
+        </button>
+
         <p style={{
           fontSize: '11px',
           textTransform: 'uppercase',
@@ -312,7 +350,12 @@ function Quiz() {
         }}>
           What does this mean?
         </p>
-        <div style={{ fontSize: '64px', lineHeight: 1, marginBottom: '12px' }}>
+        <div style={{
+          fontSize: '64px',
+          lineHeight: 1,
+          marginBottom: '12px',
+          fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
+        }}>
           {current.word.kanji}
         </div>
         <p style={{ fontSize: '16px', color: 'var(--muted)' }}>
@@ -384,6 +427,18 @@ function Quiz() {
 
     </Shell>
   );
+}
+
+function speak(text: string, lang: string) {
+  if (typeof window === 'undefined') return;
+  window.speechSynthesis.cancel();
+  const utter  = new SpeechSynthesisUtterance(text);
+  utter.lang   = lang === 'ja' ? 'ja-JP' : 'zh-CN';
+  utter.rate   = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const native = voices.find(v => v.lang.startsWith(lang === 'ja' ? 'ja' : 'zh'));
+  if (native) utter.voice = native;
+  window.speechSynthesis.speak(utter);
 }
 
 // ── Shell ─────────────────────────────────────────────

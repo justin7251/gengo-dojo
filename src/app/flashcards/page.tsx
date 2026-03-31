@@ -200,29 +200,6 @@ function Flashcards() {
         <span className="pill pill-blue" style={{ marginLeft: '6px' }}>{current.type}</span>
       </div>
 
-      {/* 🔊 Voice button row — outside card, always visible */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-        <button
-          onClick={() => handleSpeak()}
-          title="Play pronunciation"
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            border: '1px solid #444',
-            background: speaking ? '#0F6E56' : '#2a2a2a',
-            cursor: 'pointer',
-            fontSize: '18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s',
-          }}
-        >
-          🔊
-        </button>
-      </div>
-
       {/* ── Card ── */}
       <div style={{
         background: 'var(--surface)',
@@ -236,7 +213,32 @@ function Flashcards() {
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: '1.5rem',
+        position: 'relative'
       }}>
+        {/* 🔊 inside card, top-right */}
+        <button
+          onClick={() => handleSpeak()}
+          title="Play pronunciation"
+          style={{
+            position: 'absolute',
+            top: '14px',
+            right: '14px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            border: '1px solid #444',
+            background: speaking ? '#0F6E56' : '#2a2a2a',
+            cursor: 'pointer',
+            fontSize: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s',
+            zIndex: 2,
+          }}
+        >
+          🔊
+        </button>
 
         {/* Kanji */}
         {current.kanji ? (
