@@ -243,7 +243,7 @@ function VocabWrite() {
     <Shell onBack={() => router.push('/dashboard')}>
 
       {/* Progress */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '0.75rem' }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           fontSize: '12px', color: 'var(--muted)', marginBottom: '6px',
@@ -259,7 +259,7 @@ function VocabWrite() {
       {/* Prompt row */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: '1rem',
+        justifyContent: 'space-between', marginBottom: '0.75rem',
       }}>
         <div>
           <p style={{
@@ -328,8 +328,8 @@ function VocabWrite() {
       <div style={{ position: 'relative', marginBottom: '10px' }}>
         <canvas
           ref={canvasRef}
-          width={400}
-          height={400}
+          width={600}
+          height={240}
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={endDraw}
@@ -339,7 +339,7 @@ function VocabWrite() {
           onTouchEnd={endDraw}
           style={{
             width: '100%',
-            aspectRatio: '1',
+            height: '240px',
             borderRadius: '16px',
             background: '#1a1a1a',
             border: '1px solid var(--border)',
@@ -357,10 +357,11 @@ function VocabWrite() {
             pointerEvents: 'none', animation: 'fadeIn 0.3s ease',
           }}>
             <span style={{
-              fontSize: '220px', lineHeight: 1,
+              fontSize: '120px',
               fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
               color: 'rgba(29,158,117,0.2)',
               userSelect: 'none',
+              lineHeight: 1,
             }}>
               {current.kanji}
             </span>
@@ -479,8 +480,12 @@ function Shell({ children, onBack }: {
         </span>
       </div>
       <div style={{
-        width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
+        width: '100%',
+        maxWidth: '680px',
+        background: 'var(--bg)',
+        border: '1px solid var(--border)',
+        borderRadius: '20px',
+        padding: '1.5rem 2rem',
       }}>
         {children}
       </div>

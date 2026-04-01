@@ -190,7 +190,7 @@ function KanaWrite() {
     <Shell script={script} onBack={() => router.push('/kana')}>
 
       {/* Progress */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>
           <span>{idx + 1} / {queue.length}</span><span>{pct}%</span>
         </div>
@@ -198,7 +198,7 @@ function KanaWrite() {
       </div>
 
       {/* Prompt */}
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
         <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500, marginBottom: '8px' }}>
           Write this character
         </p>
@@ -217,8 +217,8 @@ function KanaWrite() {
       <div style={{ position: 'relative', marginBottom: '12px' }}>
         <canvas
           ref={canvasRef}
-          width={400}
-          height={400}
+          width={600}
+          height={240}
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={endDraw}
@@ -228,7 +228,7 @@ function KanaWrite() {
           onTouchEnd={endDraw}
           style={{
             width: '100%',
-            aspectRatio: '1',
+            height: '240px',
             borderRadius: '16px',
             background: '#1a1a1a',
             border: '1px solid var(--border)',
@@ -247,7 +247,7 @@ function KanaWrite() {
             animation: 'fadeIn 0.3s ease',
           }}>
             <span style={{
-              fontSize: '200px',
+              fontSize: '140px',
               fontFamily: 'var(--font-noto-jp), "Noto Sans JP", serif',
               color: 'rgba(29,158,117,0.25)',
               userSelect: 'none',
@@ -260,7 +260,7 @@ function KanaWrite() {
       </div>
 
       {/* Canvas controls */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '0.75rem' }}>
         <button className="btn" style={{ flex: 1, fontSize: '13px' }} onClick={clearCanvas}>
           Clear ✕
         </button>
@@ -278,7 +278,7 @@ function KanaWrite() {
         padding: '10px 14px', background: 'var(--surface)',
         border: '1px solid var(--border)', borderRadius: '10px',
         fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6,
-        marginBottom: '1.5rem',
+        marginBottom: '0.75rem',
       }}>
         💡 {current?.mnemonic}
       </div>
@@ -323,7 +323,10 @@ function Shell({ children, onBack, script }: { children: React.ReactNode; onBack
           {script === 'hiragana' ? 'Write · Hiragana' : 'Write · Katakana'}
         </span>
       </div>
-      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem' }}>
+      <div style={{
+        width: '100%', maxWidth: '680px', background: 'var(--bg)',
+        border: '1px solid var(--border)', borderRadius: '20px', padding: '1.5rem 2rem',
+      }}>
         {children}
       </div>
       <style>{`

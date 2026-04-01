@@ -20,7 +20,6 @@ function KanaHub() {
   const [progress, setProgress]   = useState<Record<string, Progress>>({});
   const [script, setScript]       = useState<Script>('hiragana');
   const [loading, setLoading]     = useState(true);
-  const [speakingChar, setSpeakingChar] = useState('');
 
   const chars = script === 'hiragana' ? HIRAGANA : KATAKANA;
 
@@ -50,14 +49,12 @@ function KanaHub() {
   function speakKana(char: string) {
     if (typeof window === 'undefined') return;
     window.speechSynthesis.cancel();
-    const utter   = new SpeechSynthesisUtterance(char);
-    utter.lang    = 'ja-JP';
-    utter.rate    = 0.75;
-    const voices  = window.speechSynthesis.getVoices();
-    const native  = voices.find(v => v.lang.startsWith('ja'));
+    const utter  = new SpeechSynthesisUtterance(char);
+    utter.lang   = 'ja-JP';
+    utter.rate   = 0.75;
+    const voices = window.speechSynthesis.getVoices();
+    const native = voices.find(v => v.lang.startsWith('ja'));
     if (native) utter.voice = native;
-    utter.onstart = () => setSpeakingChar(char);
-    utter.onend   = () => setSpeakingChar('');
     window.speechSynthesis.speak(utter);
   }
 
@@ -213,17 +210,6 @@ function KanaHub() {
             <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{l.label}</span>
           </div>
         ))}
-        {speakingChar && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{
-              width: '14px', height: '14px',
-              borderRadius: '4px',
-              background: '#E6F1FB',
-              border: '1px solid #185FA5',
-            }} />
-            <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Playing</span>
-          </div>
-        )}
       </div>
 
       {/* Character grid by row */}
@@ -257,7 +243,6 @@ function KanaHub() {
                 const p        = progress[c.char];
                 const mastered = p && isMastered(p);
                 const due      = p && isDue(p);
-                const playing  = speakingChar === c.char;
 
                 return (
                   <button
@@ -273,12 +258,10 @@ function KanaHub() {
                       justifyContent: 'center',
                       border: '1px solid',
                       borderRadius: '10px',
-                      borderColor: playing  ? '#185FA5'
-                        : mastered ? 'var(--teal)'
+                      borderColor: mastered ? 'var(--teal)'
                         : due      ? '#BA7517'
                         : 'var(--border)',
-                      background: playing  ? '#E6F1FB'
-                        : mastered ? 'var(--teal-light)'
+                      background: mastered ? 'var(--teal-light)'
                         : due      ? '#FAEEDA'
                         : 'var(--surface)',
                       cursor: 'pointer',
@@ -287,14 +270,12 @@ function KanaHub() {
                       fontFamily: 'inherit',
                       padding: 0,
                       outline: 'none',
-                      transform: playing ? 'scale(1.08)' : 'scale(1)',
                     }}
                   >
                     <span style={{
                       fontSize: '22px',
                       fontFamily: 'var(--font-noto-jp), "Noto Sans JP", serif',
-                      color: playing  ? '#185FA5'
-                        : mastered ? 'var(--teal-dark)'
+                      color: mastered ? 'var(--teal-dark)'
                         : due      ? '#854F0B'
                         : 'var(--fg)',
                       lineHeight: 1,
@@ -303,8 +284,7 @@ function KanaHub() {
                     </span>
                     <span style={{
                       fontSize: '10px',
-                      color: playing  ? '#185FA5'
-                        : mastered ? 'var(--teal-dark)'
+                      color: mastered ? 'var(--teal-dark)'
                         : due      ? '#854F0B'
                         : 'var(--muted)',
                     }}>
