@@ -226,6 +226,10 @@ function Dashboard() {
             {profile.targetLang === 'ja' ? 'あ Kana' : '가 Hangul'}
           </button>
         )}
+        <button className="btn" style={{ borderColor: '#E24B4A', color: '#A32D2D' }}
+          onClick={() => router.push('/survival')}>
+          💀 Survival
+        </button>
       </div>
 
       <div style={{ height: '1px', background: 'var(--border)', marginBottom: '2rem' }} />
