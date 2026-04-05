@@ -2,15 +2,33 @@
 
 import {
   doc, setDoc, getDoc, getDocs,
-  collection, query, where,
-  serverTimestamp, updateDoc, writeBatch,
+  collection, writeBatch, updateDoc, deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Word, Progress, UserProfile, Rating } from './types';
+import {
+  Word, SharedWord, WordTranslation, UserWord,
+  Progress, UserProfile, Rating,
+  TargetLang, NativeLang,
+} from './types';
 import { applyRating } from './srs';
 
-// ── User profile ──────────────────────────────────────────
-export async function saveUserProfile(profile: UserProfile) {
+// ── Helpers ───────────────────────────────────────────
+
+function topicSlug(topic: string): string {
+  return topic.toLowerCase().replace(/\s+/g, '-');
+}
+
+function wordId(kanji: string, targetLang: TargetLang): string {
+  return `${targetLang}-${kanji}`;
+}
+
+function langPairKey(targetLang: TargetLang, nativeLang: NativeLang): string {
+  return `${targetLang}-${nativeLang}`;
+}
+
+// ── User profile ──────────────────────────────────────
+
+export async function saveUserProfile(profile: UserProfile): Promise<void> {
   await setDoc(doc(db, 'users', profile.uid), profile, { merge: true });
 }
 
@@ -19,102 +37,265 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   return snap.exists() ? (snap.data() as UserProfile) : null;
 }
 
-// ── Shared vocabulary cache ───────────────────────────
-export async function getCachedWords(
-  topic: string,
-  lang: string,
-  level: string
-): Promise<Word[] | null> {
-  const cacheId = `${lang}-${level}-${topic.toLowerCase().replace(/\s+g/, '-')}`;
-  const snap = await getDoc(doc(db, 'vocabulary_cache', cacheId));
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  // Cache expires after 30 days
-  if (Date.now() - data.createdAt > 30 * 86_400_000) return null;
-  return data.words as Word[];
+// ── Shared vocabulary reads ───────────────────────────
+
+// Fetch all words for a topic + targetLang, assembled with a specific translation
+export async function getSharedWords(
+  topic:      string,
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<Word[]> {
+  const slug     = topicSlug(topic);
+  const wordsRef = collection(db, 'vocabulary', slug, 'words');
+  const snap     = await getDocs(wordsRef);
+
+  const words: Word[] = [];
+
+  for (const wordDoc of snap.docs) {
+    const shared = wordDoc.data() as SharedWord;
+    if (shared.targetLang !== targetLang) continue;
+
+    // Fetch translation subcollection for this native language
+    const transSnap = await getDoc(
+      doc(db, 'vocabulary', slug, 'words', wordDoc.id, 'translations', nativeLang)
+    );
+    if (!transSnap.exists()) continue;
+
+    const trans = transSnap.data() as WordTranslation;
+
+    words.push({
+      id:                  wordDoc.id,
+      kanji:               shared.kanji,
+      reading:             shared.reading,
+      romanization:        shared.romanization,
+      example:             shared.example,
+      type:                shared.type,
+      targetLang:          shared.targetLang,
+      nativeLang,
+      topic:               shared.topic,
+      createdAt:           shared.createdAt,
+      meaning:             trans.meaning,
+      example_translation: trans.example_translation,
+    });
+  }
+
+  return words;
 }
 
-export async function setCachedWords(
-  topic: string,
-  lang: string,
-  level: string,
-  words: Word[]
-): Promise<void> {
-  const cacheId = `${lang}-${level}-${topic.toLowerCase().replace(/\s+g/, '-')}`;
-  await setDoc(doc(db, 'vocabulary_cache', cacheId), {
-    topic, lang, level,
-    words,
-    createdAt: Date.now(),
-  });
-}   
+// ── User word list ────────────────────────────────────
 
-// ── Vocabulary ────────────────────────────────────────────
-export async function saveWords(uid: string, words: Word[]) {
-  const batch = writeBatch(db);
-  words.forEach((w) => {
-    batch.set(doc(db, 'vocabulary', uid, 'words', w.id), w);
-    // Initialise progress for each new word
-    batch.set(doc(db, 'progress', uid, 'words', w.id), {
-      wordId: w.id,
-      correct: 0,
-      wrong: 0,
-      nextReview: Date.now(),
-      interval: 'new',
-      lastReviewed: Date.now(),
-    } satisfies Progress);
+// Save references to the user's personal word list
+export async function saveUserWords(
+  uid:        string,
+  words:      Word[],
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<void> {
+  const batch  = writeBatch(db);
+  const pairKey = langPairKey(targetLang, nativeLang);
+
+  words.forEach(w => {
+    const ref = doc(db, 'user_words', uid, pairKey, w.id);
+    const userWord: UserWord = {
+      wordId:     w.id,
+      topic:      w.topic,
+      targetLang: w.targetLang,
+      nativeLang,
+      addedAt:    Date.now(),
+    };
+    batch.set(ref, userWord, { merge: true });
   });
+
   await batch.commit();
 }
 
-export async function getWords(uid: string): Promise<Word[]> {
-  const snap = await getDocs(collection(db, 'vocabulary', uid, 'words'));
-  return snap.docs.map((d) => d.data() as Word);
+// Get user's word list, assembled with shared vocab + translations
+export async function getUserWords(
+  uid:        string,
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<Word[]> {
+  const pairKey  = langPairKey(targetLang, nativeLang);
+  const listSnap = await getDocs(
+    collection(db, 'user_words', uid, pairKey)
+  );
+
+  if (listSnap.empty) return [];
+
+  // Group by topic for efficient fetching
+  const byTopic: Record<string, UserWord[]> = {};
+  for (const d of listSnap.docs) {
+    const uw = d.data() as UserWord;
+    if (!byTopic[uw.topic]) byTopic[uw.topic] = [];
+    byTopic[uw.topic].push(uw);
+  }
+
+  const words: Word[] = [];
+
+  for (const [topic, userWords] of Object.entries(byTopic)) {
+    const slug = topicSlug(topic);
+    for (const uw of userWords) {
+      // Fetch shared word
+      const wordSnap = await getDoc(
+        doc(db, 'vocabulary', slug, 'words', uw.wordId)
+      );
+      if (!wordSnap.exists()) continue;
+      const shared = wordSnap.data() as SharedWord;
+
+      // Fetch translation
+      const transSnap = await getDoc(
+        doc(db, 'vocabulary', slug, 'words', uw.wordId, 'translations', nativeLang)
+      );
+      if (!transSnap.exists()) continue;
+      const trans = transSnap.data() as WordTranslation;
+
+      words.push({
+        id:                  uw.wordId,
+        kanji:               shared.kanji,
+        reading:             shared.reading,
+        romanization:        shared.romanization,
+        example:             shared.example,
+        type:                shared.type,
+        targetLang:          shared.targetLang,
+        nativeLang,
+        topic:               shared.topic,
+        createdAt:           shared.createdAt,
+        meaning:             trans.meaning,
+        example_translation: trans.example_translation,
+      });
+    }
+  }
+
+  return words;
 }
 
-// ── Progress ──────────────────────────────────────────────
-export async function getProgress(uid: string): Promise<Record<string, Progress>> {
-  const snap = await getDocs(collection(db, 'progress', uid, 'words'));
-  const result: Record<string, Progress> = {};
-  snap.docs.forEach((d) => { result[d.id] = d.data() as Progress; });
-  return result;
-}
+// ── Progress ──────────────────────────────────────────
 
-export async function rateWord(uid: string, wordId: string, rating: Rating, prev: Progress) {
-  const update = applyRating(prev, rating);
-  await updateDoc(doc(db, 'progress', uid, 'words', wordId), update);
-}
-
-// ── Kana progress ─────────────────────────────────────
-export async function getKanaProgress(uid: string): Promise<Record<string, Progress>> {
-  const snap = await getDocs(collection(db, 'kana_progress', uid, 'chars'));
+export async function getProgress(
+  uid:        string,
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<Record<string, Progress>> {
+  const pairKey  = langPairKey(targetLang, nativeLang);
+  const snap     = await getDocs(
+    collection(db, 'progress', uid, pairKey)
+  );
   const result: Record<string, Progress> = {};
   snap.docs.forEach(d => { result[d.id] = d.data() as Progress; });
   return result;
 }
 
-export async function rateKana(uid: string, char: string, rating: Rating, prev: Progress) {
-  const update = applyRating(prev, rating);
-  await setDoc(doc(db, 'kana_progress', uid, 'chars', char), {
-    ...prev,
-    ...update,
-    wordId: char,
-  }, { merge: true });
+export async function initProgress(
+  uid:        string,
+  wordIds:    string[],
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<void> {
+  const batch   = writeBatch(db);
+  const pairKey = langPairKey(targetLang, nativeLang);
+
+  wordIds.forEach(wid => {
+    batch.set(
+      doc(db, 'progress', uid, pairKey, wid),
+      {
+        wordId:       wid,
+        correct:      0,
+        wrong:        0,
+        nextReview:   Date.now(),
+        interval:     'new',
+        lastReviewed: Date.now(),
+      } satisfies Progress,
+      { merge: true }
+    );
+  });
+
+  await batch.commit();
 }
 
-export async function initKanaProgress(uid: string, chars: string[]) {
+export async function rateWord(
+  uid:        string,
+  wordId:     string,
+  rating:     Rating,
+  prev:       Progress,
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<void> {
+  const pairKey = langPairKey(targetLang, nativeLang);
+  const update  = applyRating(prev, rating);
+  await updateDoc(
+    doc(db, 'progress', uid, pairKey, wordId),
+    update
+  );
+}
+
+// ── Kana progress ─────────────────────────────────────
+
+export async function getKanaProgress(
+  uid: string
+): Promise<Record<string, Progress>> {
+  const snap   = await getDocs(collection(db, 'kana_progress', uid, 'chars'));
+  const result: Record<string, Progress> = {};
+  snap.docs.forEach(d => { result[d.id] = d.data() as Progress; });
+  return result;
+}
+
+export async function rateKana(
+  uid:    string,
+  char:   string,
+  rating: Rating,
+  prev:   Progress
+): Promise<void> {
+  const update = applyRating(prev, rating);
+  await setDoc(
+    doc(db, 'kana_progress', uid, 'chars', char),
+    { ...prev, ...update, wordId: char },
+    { merge: true }
+  );
+}
+
+export async function initKanaProgress(
+  uid:   string,
+  chars: string[]
+): Promise<void> {
   const batch = writeBatch(db);
   chars.forEach(char => {
     batch.set(
       doc(db, 'kana_progress', uid, 'chars', char),
       {
-        wordId: char,
-        correct: 0, wrong: 0,
-        nextReview: Date.now(),
-        interval: 'new',
+        wordId:       char,
+        correct:      0,
+        wrong:        0,
+        nextReview:   Date.now(),
+        interval:     'new',
         lastReviewed: Date.now(),
       } satisfies Progress,
       { merge: true }
     );
   });
   await batch.commit();
+}
+
+// ── Topic checks ──────────────────────────────────────
+
+// Check if a topic already has words in the shared library
+export async function topicExists(
+  topic:      string,
+  targetLang: TargetLang
+): Promise<boolean> {
+  const slug = topicSlug(topic);
+  const snap = await getDocs(collection(db, 'vocabulary', slug, 'words'));
+  return snap.docs.some(d => (d.data() as SharedWord).targetLang === targetLang);
+}
+
+// Get topics a user has added words from
+export async function getUserTopics(
+  uid:        string,
+  targetLang: TargetLang,
+  nativeLang: NativeLang
+): Promise<string[]> {
+  const pairKey  = langPairKey(targetLang, nativeLang);
+  const snap     = await getDocs(collection(db, 'user_words', uid, pairKey));
+  const topics   = new Set<string>();
+  snap.docs.forEach(d => topics.add((d.data() as UserWord).topic));
+  return Array.from(topics);
 }

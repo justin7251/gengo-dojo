@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getWords, getProgress, rateWord, getUserProfile } from '@/lib/firestore';
-import { Word, Progress, Rating } from '@/lib/types';
+import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
+import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -12,36 +12,38 @@ export default function WritePage() {
   return <AuthGuard><VocabWrite /></AuthGuard>;
 }
 
-function speak(text: string, lang: string) {
+function speak(text: string, targetLang: TargetLang) {
   if (typeof window === 'undefined') return;
   window.speechSynthesis.cancel();
-  const utter  = new SpeechSynthesisUtterance(text);
-  utter.lang   = lang === 'ja' ? 'ja-JP' : 'zh-CN';
-  utter.rate   = 0.8;
-  const voices = window.speechSynthesis.getVoices();
-  const native = voices.find(v => v.lang.startsWith(lang === 'ja' ? 'ja' : 'zh'));
+  const utter    = new SpeechSynthesisUtterance(text);
+  utter.lang     = VOICE_LANG[targetLang] ?? 'ja-JP';
+  utter.rate     = 0.8;
+  const voices   = window.speechSynthesis.getVoices();
+  const langCode = VOICE_LANG[targetLang].split('-')[0];
+  const native   = voices.find(v => v.lang.startsWith(langCode));
   if (native) utter.voice = native;
   window.speechSynthesis.speak(utter);
 }
 
 function VocabWrite() {
-  const router = useRouter();
+  const router    = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [uid, setUid]             = useState('');
-  const [lang, setLang]           = useState<'ja' | 'zh'>('ja');
-  const [queue, setQueue]         = useState<Word[]>([]);
-  const [progress, setProgress]   = useState<Record<string, Progress>>({});
-  const [idx, setIdx]             = useState(0);
-  const [drawing, setDrawing]     = useState(false);
-  const [hasStrokes, setHasStrokes] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
-  const [showMeaning, setShowMeaning] = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [rating, setRating]       = useState(false);
-  const [stats, setStats]         = useState({ correct: 0, wrong: 0 });
-  const [done, setDone]           = useState(false);
-  const lastPos = useRef({ x: 0, y: 0 });
+  const [uid, setUid]                   = useState('');
+  const [targetLang, setTargetLang]     = useState<TargetLang>('ja');
+  const [nativeLang, setNativeLang]     = useState<NativeLang>('en');
+  const [queue, setQueue]               = useState<Word[]>([]);
+  const [progress, setProgress]         = useState<Record<string, Progress>>({});
+  const [idx, setIdx]                   = useState(0);
+  const [drawing, setDrawing]           = useState(false);
+  const [hasStrokes, setHasStrokes]     = useState(false);
+  const [showGuide, setShowGuide]       = useState(false);
+  const [showMeaning, setShowMeaning]   = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [rating, setRating]             = useState(false);
+  const [stats, setStats]               = useState({ correct: 0, wrong: 0 });
+  const [done, setDone]                 = useState(false);
+  const lastPos                         = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     window.speechSynthesis.getVoices();
@@ -52,12 +54,14 @@ function VocabWrite() {
     return onAuth(async (user) => {
       if (!user) return;
       setUid(user.uid);
-      const [profile, words, prog] = await Promise.all([
-        getUserProfile(user.uid),
-        getWords(user.uid),
-        getProgress(user.uid),
+      const profile = await getUserProfile(user.uid);
+      if (!profile) return;
+      setTargetLang(profile.targetLang);
+      setNativeLang(profile.nativeLang);
+      const [words, prog] = await Promise.all([
+        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
+        getProgress(user.uid, profile.targetLang, profile.nativeLang),
       ]);
-      setLang(profile?.lang ?? 'ja');
       setProgress(prog);
       const due     = words.filter(w => prog[w.id] && isDue(prog[w.id]));
       const rest    = words.filter(w => !prog[w.id] || !isDue(prog[w.id]));
@@ -66,7 +70,7 @@ function VocabWrite() {
     });
   }, []);
 
-  // Reset canvas + state when card changes
+  // Reset canvas on card change
   useEffect(() => {
     if (queue.length && idx < queue.length) {
       clearCanvas();
@@ -139,7 +143,6 @@ function VocabWrite() {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx    = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Subtle crosshair guide
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth   = 1;
     ctx.setLineDash([4, 4]);
@@ -158,7 +161,7 @@ function VocabWrite() {
     setRating(true);
     const prev = progress[current.id];
     if (prev) {
-      await rateWord(uid, current.id, r, prev);
+      await rateWord(uid, current.id, r, prev, targetLang, nativeLang);
       setStats(s => ({
         correct: r !== 'wrong' ? s.correct + 1 : s.correct,
         wrong:   r === 'wrong' ? s.wrong + 1   : s.wrong,
@@ -270,19 +273,17 @@ function VocabWrite() {
             Write this word
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* Meaning always shown as the prompt */}
-            <span style={{ fontSize: '22px', fontWeight: 600 }}>
-              {current.meaning}
-            </span>
+            <span style={{ fontSize: '22px', fontWeight: 600 }}>{current.meaning}</span>
             <span className="pill pill-gray">{current.topic}</span>
             <span className="pill pill-blue">{current.type}</span>
           </div>
-          {/* Reading hint — tap to reveal */}
+
+          {/* Reading hint */}
           {!showMeaning ? (
             <button
               onClick={() => {
                 setShowMeaning(true);
-                speak(current.kanji, lang);
+                speak(current.kanji, targetLang);
               }}
               style={{
                 marginTop: '6px', fontSize: '12px',
@@ -297,7 +298,7 @@ function VocabWrite() {
           ) : (
             <p style={{
               marginTop: '6px', fontSize: '14px', color: 'var(--muted)',
-              fontFamily: 'var(--font-noto-jp), "Noto Sans JP", serif',
+              fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
             }}>
               {current.reading}
               {current.romanization && (
@@ -309,9 +310,9 @@ function VocabWrite() {
           )}
         </div>
 
-        {/* Voice button */}
+        {/* Voice */}
         <button
-          onClick={() => speak(current.kanji, lang)}
+          onClick={() => speak(current.kanji, targetLang)}
           style={{
             width: '44px', height: '44px', borderRadius: '50%',
             border: '1px solid #444', background: '#2a2a2a',
@@ -338,18 +339,14 @@ function VocabWrite() {
           onTouchMove={draw}
           onTouchEnd={endDraw}
           style={{
-            width: '100%',
-            height: '240px',
-            borderRadius: '16px',
-            background: '#1a1a1a',
+            width: '100%', height: '240px',
+            borderRadius: '16px', background: '#1a1a1a',
             border: '1px solid var(--border)',
-            cursor: 'crosshair',
-            touchAction: 'none',
-            display: 'block',
+            cursor: 'crosshair', touchAction: 'none', display: 'block',
           }}
         />
 
-        {/* Ghost kanji overlay */}
+        {/* Ghost character overlay */}
         {showGuide && (
           <div style={{
             position: 'absolute', inset: 0,
@@ -357,11 +354,10 @@ function VocabWrite() {
             pointerEvents: 'none', animation: 'fadeIn 0.3s ease',
           }}>
             <span style={{
-              fontSize: '120px',
-              fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
+              fontSize: '160px', lineHeight: 1,
+              fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
               color: 'rgba(29,158,117,0.2)',
               userSelect: 'none',
-              lineHeight: 1,
             }}>
               {current.kanji}
             </span>
@@ -370,12 +366,8 @@ function VocabWrite() {
       </div>
 
       {/* Canvas controls */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem' }}>
-        <button
-          className="btn"
-          style={{ flex: 1, fontSize: '13px' }}
-          onClick={clearCanvas}
-        >
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '0.75rem' }}>
+        <button className="btn" style={{ flex: 1, fontSize: '13px' }} onClick={clearCanvas}>
           Clear ✕
         </button>
         <button
@@ -383,8 +375,8 @@ function VocabWrite() {
           style={{
             flex: 1, fontSize: '13px',
             borderColor: showGuide ? 'var(--teal)' : 'var(--border)',
-            background: showGuide ? 'var(--teal-light)' : 'transparent',
-            color: showGuide ? 'var(--teal-dark)' : 'var(--fg)',
+            background:  showGuide ? 'var(--teal-light)' : 'transparent',
+            color:       showGuide ? 'var(--teal-dark)' : 'var(--fg)',
           }}
           onClick={() => setShowGuide(g => !g)}
         >
@@ -397,19 +389,23 @@ function VocabWrite() {
         <div style={{
           padding: '10px 14px', background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: '10px',
-          fontSize: '13px', color: 'var(--muted)', lineHeight: 1.7,
-          marginBottom: '1.25rem',
-          fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
+          fontSize: '13px', lineHeight: 1.7,
+          marginBottom: '0.75rem',
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-            <span style={{ fontFamily: 'inherit' }}>💬</span>
-            <span style={{ flex: 1 }}>{current.example}</span>
+            <span>💬</span>
+            <span style={{
+              flex: 1, color: 'var(--fg)',
+              fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
+            }}>
+              {current.example}
+            </span>
           </div>
           {current.example_translation && (
             <div style={{
               borderTop: '1px solid var(--border)', marginTop: '6px',
               paddingTop: '6px', fontSize: '12px',
-              fontStyle: 'italic', fontFamily: 'inherit',
+              color: 'var(--muted)', fontStyle: 'italic',
             }}>
               {current.example_translation}
             </div>
@@ -417,7 +413,7 @@ function VocabWrite() {
         </div>
       )}
 
-      {/* Self-rate — appears after first stroke */}
+      {/* Self-rate buttons — appear after first stroke */}
       {hasStrokes && (
         <div style={{ animation: 'fadeIn 0.2s ease' }}>
           <p style={{
@@ -429,29 +425,30 @@ function VocabWrite() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {([
-              { r: 'wrong', label: 'Needs work', color: '#E24B4A', bg: '#FCEBEB' },
+              { r: 'wrong', label: 'Needs work',  color: '#E24B4A', bg: '#FCEBEB' },
               { r: 'good',  label: 'Pretty good', color: '#0F6E56', bg: '#E1F5EE' },
-              { r: 'easy',  label: 'Nailed it',  color: '#185FA5', bg: '#E6F1FB' },
-            ] as { r: Rating; label: string; color: string; bg: string }[]).map(({ r, label, color, bg }) => (
-              <button
-                key={r}
-                disabled={rating}
-                onClick={() => handleRate(r)}
-                style={{
-                  padding: '12px 0',
-                  border: `1px solid ${color}`,
-                  borderRadius: '10px',
-                  background: bg, color,
-                  fontSize: '13px', fontWeight: 500,
-                  cursor: rating ? 'not-allowed' : 'pointer',
-                  opacity: rating ? 0.5 : 1,
-                  transition: 'opacity 0.15s',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {label}
-              </button>
-            ))}
+              { r: 'easy',  label: 'Nailed it',   color: '#185FA5', bg: '#E6F1FB' },
+            ] as { r: Rating; label: string; color: string; bg: string }[])
+              .map(({ r, label, color, bg }) => (
+                <button
+                  key={r}
+                  disabled={rating}
+                  onClick={() => handleRate(r)}
+                  style={{
+                    padding: '12px 0',
+                    border: `1px solid ${color}`,
+                    borderRadius: '10px',
+                    background: bg, color,
+                    fontSize: '13px', fontWeight: 500,
+                    cursor: rating ? 'not-allowed' : 'pointer',
+                    opacity: rating ? 0.5 : 1,
+                    transition: 'opacity 0.15s',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
           </div>
         </div>
       )}
@@ -460,11 +457,8 @@ function VocabWrite() {
   );
 }
 
-// ── Shell ───────────────────────────────────────────────
-function Shell({ children, onBack }: {
-  children: React.ReactNode;
-  onBack: () => void;
-}) {
+// ── Shell ─────────────────────────────────────────────
+function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
   return (
     <main style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -480,11 +474,8 @@ function Shell({ children, onBack }: {
         </span>
       </div>
       <div style={{
-        width: '100%',
-        maxWidth: '680px',
-        background: 'var(--bg)',
-        border: '1px solid var(--border)',
-        borderRadius: '20px',
+        width: '100%', maxWidth: '680px', background: 'var(--bg)',
+        border: '1px solid var(--border)', borderRadius: '20px',
         padding: '1.5rem 2rem',
       }}>
         {children}

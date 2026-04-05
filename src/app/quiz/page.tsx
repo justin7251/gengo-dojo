@@ -3,35 +3,44 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getWords, getProgress, rateWord, getUserProfile } from '@/lib/firestore';
-import { Word, Progress, Rating } from '@/lib/types';
+import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
+import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function QuizPage() {
-  return (
-    <AuthGuard>
-      <Quiz />
-    </AuthGuard>
-  );
+  return <AuthGuard><Quiz /></AuthGuard>;
 }
 
 type QuizQuestion = {
-  word: Word;
+  word:    Word;
   choices: string[];
   correct: string;
 };
 
 type AnswerState = 'unanswered' | 'correct' | 'wrong';
 
+function speak(text: string, targetLang: TargetLang) {
+  if (typeof window === 'undefined') return;
+  window.speechSynthesis.cancel();
+  const utter    = new SpeechSynthesisUtterance(text);
+  utter.lang     = VOICE_LANG[targetLang] ?? 'ja-JP';
+  utter.rate     = 0.85;
+  const voices   = window.speechSynthesis.getVoices();
+  const langCode = VOICE_LANG[targetLang].split('-')[0];
+  const native   = voices.find(v => v.lang.startsWith(langCode));
+  if (native) utter.voice = native;
+  window.speechSynthesis.speak(utter);
+}
+
 function buildQuestions(words: Word[]): QuizQuestion[] {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
   const pool     = shuffled.slice(0, Math.min(10, shuffled.length));
-  return pool.map((word) => {
+  return pool.map(word => {
     const distractors = words
-      .filter((w) => w.id !== word.id)
+      .filter(w => w.id !== word.id)
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
-      .map((w) => w.meaning);
+      .map(w => w.meaning);
     const choices = [...distractors, word.meaning].sort(() => Math.random() - 0.5);
     return { word, choices, correct: word.meaning };
   });
@@ -39,29 +48,38 @@ function buildQuestions(words: Word[]): QuizQuestion[] {
 
 function Quiz() {
   const router = useRouter();
-  const [uid, setUid]               = useState('');
-  const [questions, setQuestions]   = useState<QuizQuestion[]>([]);
-  const [progress, setProgress]     = useState<Record<string, Progress>>({});
-  const [idx, setIdx]               = useState(0);
-  const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
+
+  const [uid, setUid]                   = useState('');
+  const [targetLang, setTargetLang]     = useState<TargetLang>('ja');
+  const [nativeLang, setNativeLang]     = useState<NativeLang>('en');
+  const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
+  const [progress, setProgress]         = useState<Record<string, Progress>>({});
+  const [idx, setIdx]                   = useState(0);
+  const [answerState, setAnswerState]   = useState<AnswerState>('unanswered');
   const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]           = useState(true);
+  const [speaking, setSpeaking]         = useState(false);
   const [sessionScore, setSessionScore] = useState({ correct: 0, wrong: 0 });
-  const [done, setDone]             = useState(false);
-  const [advancing, setAdvancing]   = useState(false);
-  const [lang, setLang] = useState<'ja' | 'zh'>('ja');
-  const [speaking, setSpeaking] = useState(false);
+  const [done, setDone]                 = useState(false);
+  const [advancing, setAdvancing]       = useState(false);
+
+  useEffect(() => {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }, []);
 
   useEffect(() => {
     return onAuth(async (user) => {
       if (!user) return;
       setUid(user.uid);
-      const [profile, words, prog] = await Promise.all([
-        getUserProfile(user.uid),
-        getWords(user.uid),
-        getProgress(user.uid),
+      const profile = await getUserProfile(user.uid);
+      if (!profile) return;
+      setTargetLang(profile.targetLang);
+      setNativeLang(profile.nativeLang);
+      const [words, prog] = await Promise.all([
+        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
+        getProgress(user.uid, profile.targetLang, profile.nativeLang),
       ]);
-      setLang(profile?.lang ?? 'ja');
       setProgress(prog);
       setQuestions(buildQuestions(words));
       setLoading(false);
@@ -70,6 +88,13 @@ function Quiz() {
 
   const current = questions[idx];
   const pct     = questions.length ? Math.round((idx / questions.length) * 100) : 0;
+
+  function handleSpeak() {
+    if (!current) return;
+    setSpeaking(true);
+    speak(current.word.kanji, targetLang);
+    setTimeout(() => setSpeaking(false), 1200);
+  }
 
   async function handleAnswer(choice: string) {
     if (answerState !== 'unanswered' || advancing) return;
@@ -80,12 +105,10 @@ function Quiz() {
       correct: isCorrect ? s.correct + 1 : s.correct,
       wrong:   !isCorrect ? s.wrong + 1  : s.wrong,
     }));
-
-    // Write SRS rating to Firestore
-    const prev = progress[current.word.id];
+    const prev   = progress[current.word.id];
+    const rating: Rating = isCorrect ? 'good' : 'wrong';
     if (prev) {
-      const rating: Rating = isCorrect ? 'good' : 'wrong';
-      await rateWord(uid, current.word.id, rating, prev);
+      await rateWord(uid, current.word.id, rating, prev, targetLang, nativeLang);
     }
   }
 
@@ -112,37 +135,24 @@ function Quiz() {
     setQuestions(qs => buildQuestions(qs.map(q => q.word)));
   }
 
-  function handleSpeak() {
-    if (!current) return;
-    setSpeaking(true);
-    speak(current.word.kanji, lang);
-    setTimeout(() => setSpeaking(false), 1200);
-  }
-
   function choiceStyle(choice: string): React.CSSProperties {
     const base: React.CSSProperties = {
-      width: '100%',
-      textAlign: 'left',
+      width: '100%', textAlign: 'left',
       padding: '14px 16px',
-      border: '1px solid var(--border)',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'var(--border)',
       borderRadius: '12px',
       background: 'var(--bg)',
-      color: 'var(--fg)',
-      fontSize: '14px',
+      color: 'var(--fg)', fontSize: '14px',
       cursor: answerState === 'unanswered' ? 'pointer' : 'default',
-      transition: 'all 0.15s',
-      fontFamily: 'inherit',
-      lineHeight: 1.4,
+      transition: 'all 0.15s', fontFamily: 'inherit', lineHeight: 1.4,
     };
-
     if (answerState === 'unanswered') return base;
-
-    if (choice === current.correct) {
-      return { ...base, background: '#E1F5EE', borderColor: 'var(--teal)', color: 'var(--teal-dark)' };
-    }
-    if (choice === selectedAnswer && choice !== current.correct) {
+    if (choice === current.correct)
+      return { ...base, background: '#E1F5EE', borderColor: '#1D9E75', color: '#0F6E56' };
+    if (choice === selectedAnswer && choice !== current.correct)
       return { ...base, background: '#FCEBEB', borderColor: '#E24B4A', color: '#A32D2D' };
-    }
     return { ...base, opacity: 0.4 };
   }
 
@@ -150,9 +160,7 @@ function Quiz() {
   if (loading) {
     return (
       <Shell onBack={() => router.push('/dashboard')}>
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <Spinner />
-        </div>
+        <div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div>
       </Shell>
     );
   }
@@ -181,11 +189,13 @@ function Quiz() {
   if (done) {
     const total      = sessionScore.correct + sessionScore.wrong;
     const pctCorrect = total ? Math.round((sessionScore.correct / total) * 100) : 0;
-    const emoji      = pctCorrect === 100 ? '🏆' : pctCorrect >= 80 ? '🎯' : pctCorrect >= 50 ? '💪' : '📖';
+    const emoji      = pctCorrect === 100 ? '🏆'
+      : pctCorrect >= 80 ? '🎯'
+      : pctCorrect >= 50 ? '💪' : '📖';
     const message    = pctCorrect === 100 ? 'Perfect score!'
       : pctCorrect >= 80 ? 'Great work!'
       : pctCorrect >= 50 ? 'Keep practising!'
-      : 'Keep going — you\'ll get there!';
+      : "Keep going — you'll get there!";
 
     return (
       <Shell onBack={() => router.push('/dashboard')}>
@@ -201,20 +211,15 @@ function Quiz() {
           {/* Score bar */}
           <div style={{ marginBottom: '0.5rem' }}>
             <div style={{
-              height: '10px',
-              background: 'var(--surface)',
-              borderRadius: '5px',
-              overflow: 'hidden',
+              height: '10px', background: 'var(--surface)',
+              borderRadius: '5px', overflow: 'hidden',
               border: '1px solid var(--border)',
             }}>
               <div style={{
-                height: '100%',
-                width: `${pctCorrect}%`,
-                borderRadius: '5px',
+                height: '100%', width: `${pctCorrect}%`, borderRadius: '5px',
                 background: pctCorrect === 100 ? 'var(--teal)'
                   : pctCorrect >= 80 ? 'var(--teal)'
-                  : pctCorrect >= 50 ? '#EF9F27'
-                  : '#E24B4A',
+                  : pctCorrect >= 50 ? '#EF9F27' : '#E24B4A',
                 transition: 'width 0.6s ease',
               }} />
             </div>
@@ -223,58 +228,48 @@ function Quiz() {
             </p>
           </div>
 
-          {/* Per-question review */}
+          {/* Word review */}
           <div style={{
-            textAlign: 'left',
-            margin: '2rem 0',
-            border: '1px solid var(--border)',
-            borderRadius: '12px',
-            overflow: 'hidden',
+            textAlign: 'left', margin: '2rem 0',
+            border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden',
           }}>
             <div style={{
-              padding: '10px 16px',
-              background: 'var(--surface)',
+              padding: '10px 16px', background: 'var(--surface)',
               borderBottom: '1px solid var(--border)',
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--muted)',
-              fontWeight: 500,
+              fontSize: '11px', textTransform: 'uppercase',
+              letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500,
             }}>
               Review
             </div>
-            {questions.map((q, i) => {
-              const wasCorrect = sessionScore.correct > 0; // simplified — see note
-              return (
-                <div key={q.word.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderBottom: i < questions.length - 1 ? '1px solid var(--border)' : 'none',
+            {questions.map((q, i) => (
+              <div key={q.word.id} style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 16px',
+                borderBottom: i < questions.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <span style={{
+                  fontSize: '22px', minWidth: '32px',
+                  fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
                 }}>
-                  <span style={{ fontSize: '22px', minWidth: '32px' }}>{q.word.kanji}</span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '14px', fontWeight: 500, marginBottom: '2px' }}>
-                      {q.word.meaning}
-                    </p>
-                    <p style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                      {q.word.reading}
-                      {q.word.romanization ? ` · ${q.word.romanization}` : ''}
-                    </p>
-                  </div>
+                  {q.word.kanji}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '14px', fontWeight: 500, marginBottom: '2px' }}>
+                    {q.word.meaning}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                    {q.word.reading}
+                    {q.word.romanization ? ` · ${q.word.romanization}` : ''}
+                  </p>
                 </div>
-              );
-            })}
+                <span className="pill pill-gray">{q.word.topic}</span>
+              </div>
+            ))}
           </div>
 
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <button className="btn btn-primary" onClick={restart}>
-              Try again
-            </button>
-            <button className="btn" onClick={() => router.push('/dashboard')}>
-              Dashboard
-            </button>
+            <button className="btn btn-primary" onClick={restart}>Try again</button>
+            <button className="btn" onClick={() => router.push('/dashboard')}>Dashboard</button>
           </div>
         </div>
       </Shell>
@@ -288,14 +283,11 @@ function Quiz() {
       {/* Progress */}
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '12px',
-          color: 'var(--muted)',
-          marginBottom: '6px',
+          display: 'flex', justifyContent: 'space-between',
+          fontSize: '12px', color: 'var(--muted)', marginBottom: '6px',
         }}>
           <span>Question {idx + 1} of {questions.length}</span>
-          <span style={{ color: 'var(--teal-dark)', fontWeight: 500 }}>
+          <span style={{ color: '#0F6E56', fontWeight: 500 }}>
             {sessionScore.correct} correct
           </span>
         </div>
@@ -306,58 +298,42 @@ function Quiz() {
 
       {/* Question card */}
       <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '16px',
-        padding: '2rem',
-        textAlign: 'center',
-        marginBottom: '1.5rem',
-        position: 'relative',    // ← add
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '16px', padding: '2rem', textAlign: 'center',
+        marginBottom: '1.5rem', position: 'relative',
       }}>
-
-        {/* 🔊 inside card top-right */}
+        {/* 🔊 inside card */}
         <button
           onClick={handleSpeak}
           title="Play pronunciation"
           style={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
+            position: 'absolute', top: '12px', right: '12px',
+            width: '34px', height: '34px', borderRadius: '50%',
             border: '1px solid #444',
             background: speaking ? '#0F6E56' : '#2a2a2a',
-            cursor: 'pointer',
-            fontSize: '15px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s',
-            zIndex: 2,
+            cursor: 'pointer', fontSize: '15px', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s', zIndex: 2,
           }}
         >
           🔊
         </button>
 
         <p style={{
-          fontSize: '11px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--muted)',
-          fontWeight: 500,
-          marginBottom: '1rem',
+          fontSize: '11px', textTransform: 'uppercase',
+          letterSpacing: '0.08em', color: 'var(--muted)',
+          fontWeight: 500, marginBottom: '1rem',
         }}>
           What does this mean?
         </p>
+
         <div style={{
-          fontSize: '64px',
-          lineHeight: 1,
-          marginBottom: '12px',
-          fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
+          fontSize: '64px', lineHeight: 1, marginBottom: '12px',
+          fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", "Noto Sans SC", serif',
         }}>
           {current.word.kanji}
         </div>
+
         <p style={{ fontSize: '16px', color: 'var(--muted)' }}>
           {current.word.reading}
           {current.word.romanization && (
@@ -368,14 +344,10 @@ function Quiz() {
         </p>
       </div>
 
-      {/* Choices */}
+      {/* Answer choices */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-        {current.choices.map((choice) => (
-          <button
-            key={choice}
-            style={choiceStyle(choice)}
-            onClick={() => handleAnswer(choice)}
-          >
+        {current.choices.map(choice => (
+          <button key={choice} style={choiceStyle(choice)} onClick={() => handleAnswer(choice)}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {answerState !== 'unanswered' && choice === current.correct && (
                 <span style={{ fontSize: '16px' }}>✓</span>
@@ -389,30 +361,39 @@ function Quiz() {
         ))}
       </div>
 
-      {/* Example sentence + next button — shown after answering */}
+      {/* Example + next button after answering */}
       {answerState !== 'unanswered' && (
         <div style={{ animation: 'fadeIn 0.2s ease' }}>
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '12px',
-            padding: '14px 16px',
-            marginBottom: '1rem',
-          }}>
-            <p style={{
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--muted)',
-              fontWeight: 500,
-              marginBottom: '6px',
+          {current.word.example && (
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: '12px', padding: '14px 16px', marginBottom: '1rem',
             }}>
-              Example
-            </p>
-            <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--fg)' }}>
-              {current.word.example}
-            </p>
-          </div>
+              <p style={{
+                fontSize: '11px', textTransform: 'uppercase',
+                letterSpacing: '0.08em', color: 'var(--muted)',
+                fontWeight: 500, marginBottom: '6px',
+              }}>
+                Example
+              </p>
+              <p style={{
+                fontSize: '14px', lineHeight: 1.6, color: 'var(--fg)',
+                fontFamily: 'var(--font-noto-jp), var(--font-noto-sc), "Noto Sans JP", serif',
+                marginBottom: current.word.example_translation ? '6px' : '0',
+              }}>
+                {current.word.example}
+              </p>
+              {current.word.example_translation && (
+                <p style={{
+                  fontSize: '13px', color: 'var(--muted)',
+                  fontStyle: 'italic',
+                  borderTop: '1px solid var(--border)', paddingTop: '6px',
+                }}>
+                  {current.word.example_translation}
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             className="btn btn-primary"
@@ -429,63 +410,28 @@ function Quiz() {
   );
 }
 
-function speak(text: string, lang: string) {
-  if (typeof window === 'undefined') return;
-  window.speechSynthesis.cancel();
-  const utter  = new SpeechSynthesisUtterance(text);
-  utter.lang   = lang === 'ja' ? 'ja-JP' : 'zh-CN';
-  utter.rate   = 0.85;
-  const voices = window.speechSynthesis.getVoices();
-  const native = voices.find(v => v.lang.startsWith(lang === 'ja' ? 'ja' : 'zh'));
-  if (native) utter.voice = native;
-  window.speechSynthesis.speak(utter);
-}
-
 // ── Shell ─────────────────────────────────────────────
-function Shell({ children, onBack }: {
-  children: React.ReactNode;
-  onBack: () => void;
-}) {
+function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
   return (
     <main style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '2rem 1rem 4rem',
-      background: 'var(--bg)',
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', padding: '2rem 1rem 4rem', background: 'var(--bg)',
     }}>
       <div style={{
-        width: '100%',
-        maxWidth: '680px',
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '1.5rem',
+        width: '100%', maxWidth: '680px',
+        display: 'flex', alignItems: 'center', marginBottom: '1.5rem',
       }}>
-        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>
-          ← Back
-        </button>
-        <span style={{
-          fontSize: '18px',
-          fontWeight: 600,
-          marginLeft: '1rem',
-          letterSpacing: '-0.02em',
-        }}>
+        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>← Back</button>
+        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem', letterSpacing: '-0.02em' }}>
           言語道場
         </span>
       </div>
-
       <div style={{
-        width: '100%',
-        maxWidth: '680px',
-        background: 'var(--bg)',
-        border: '1px solid var(--border)',
-        borderRadius: '20px',
-        padding: '2.5rem',
+        width: '100%', maxWidth: '680px', background: 'var(--bg)',
+        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
       }}>
         {children}
       </div>
-
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
@@ -500,13 +446,9 @@ function Shell({ children, onBack }: {
 function Spinner() {
   return (
     <div style={{
-      width: '24px',
-      height: '24px',
-      border: '2px solid var(--border)',
-      borderTopColor: 'var(--muted)',
-      borderRadius: '50%',
-      animation: 'spin 0.7s linear infinite',
-      margin: '0 auto',
+      width: '24px', height: '24px',
+      border: '2px solid var(--border)', borderTopColor: 'var(--muted)',
+      borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto',
     }} />
   );
 }
