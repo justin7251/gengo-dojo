@@ -117,3 +117,68 @@ export interface UserProfile {
 
 // ── SRS rating ────────────────────────────────────────
 export type Rating = 'wrong' | 'hard' | 'good' | 'easy';
+
+// ── Energy modes ──────────────────────────────────────
+export type EnergyMode = 'scrap' | 'deepwork' | 'braindead';
+
+export interface ModeConfig {
+  id:              EnergyMode;
+  label:           string;
+  emoji:           string;
+  duration:        string;
+  description:     string;
+  timerPerWord:    number;   // seconds, 0 = no timer
+  srsWeight:       number;   // multiplier on SRS interval
+  encounterChance: number;   // 0-1 probability
+  wordsPerSession: number;
+}
+
+export const ENERGY_MODES: ModeConfig[] = [
+  {
+    id:              'scrap',
+    label:           'Scrap',
+    emoji:           '⚡',
+    duration:        '30 sec',
+    description:     'Fast-fire survival vocab. No mercy.',
+    timerPerWord:    6,
+    srsWeight:       0.5,
+    encounterChance: 0,
+    wordsPerSession: 5,
+  },
+  {
+    id:              'deepwork',
+    label:           'Deep Work',
+    emoji:           '🧠',
+    duration:        '20 min',
+    description:     'Full immersion. Translation. Writing. The real thing.',
+    timerPerWord:    0,
+    srsWeight:       2,
+    encounterChance: 0.15,
+    wordsPerSession: 20,
+  },
+  {
+    id:              'braindead',
+    label:           'Brain Dead',
+    emoji:           '🌙',
+    duration:        'Chill',
+    description:     'Late night passive matching. Low stakes. Just stay alive.',
+    timerPerWord:    0,
+    srsWeight:       0.25,
+    encounterChance: 0,
+    wordsPerSession: 10,
+  },
+];
+
+// ── Spy identity ──────────────────────────────────────
+export interface AgentProfile {
+  uid:            string;
+  codename:       string;
+  city:           string;
+  coverStatus:    'intact' | 'compromised' | 'blown';
+  chapter:        number;
+  streakDays:     number;
+  lastActiveDate: string;   // YYYY-MM-DD
+  suspicionLevel: number;   // 0-5
+  documentsFound: string[]; // unlocked story fragment IDs
+  totalMissions:  number;
+}

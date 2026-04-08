@@ -1,0 +1,38 @@
+{
+  "name": "言語道場 — Gengo Dojo",
+  "short_name": "言語道場",
+  "description": "AI-powered vocabulary shaped around your interests",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#1D9E75",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Flashcards",
+      "url": "/flashcards",
+      "description": "Study your vocabulary"
+    },
+    {
+      "name": "Survival mode",
+      "url": "/survival",
+      "description": "Test under pressure"
+    }
+  ]
+}
