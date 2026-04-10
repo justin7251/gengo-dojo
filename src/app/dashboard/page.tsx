@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuth } from '@/lib/auth';
+import { onAuth, signOut } from '@/lib/auth';
 import {
   getUserProfile, saveUserProfile,
   getUserWords, saveUserWords,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/types';
 import { isDue, isMastered } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
+import NotificationSettings from '@/components/NotificationSettings';
 
 const INTERESTS = [
   'Judo', 'Anime', 'Cooking', 'Gaming', 'Music',
@@ -214,11 +215,11 @@ function Dashboard() {
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '2rem', flexWrap: 'wrap' }}>
         <button className="btn btn-primary" disabled={!totalWords}
+          onClick={() => router.push('/words')}>Word list</button>
+        <button className="btn" disabled={!totalWords}
           onClick={() => router.push('/flashcards')}>Flashcards</button>
         <button className="btn" disabled={totalWords < 4}
           onClick={() => router.push('/quiz')}>Quiz</button>
-        <button className="btn" disabled={!totalWords}
-          onClick={() => router.push('/words')}>Word list</button>
         <button className="btn" disabled={!totalWords}
           onClick={() => router.push('/write')}>✍️ Write</button>
         {(profile?.targetLang === 'ja' || profile?.targetLang === 'ko') && (
@@ -230,10 +231,20 @@ function Dashboard() {
           onClick={() => router.push('/survival')}>
           💀 Survival
         </button>
+        <button className="btn" onClick={() => router.push('/shadow')}>
+          🎤 Shadow
+        </button>
+        <button
+          className="btn"
+          style={{ borderColor: '#534AB7', color: '#3C3489' }}
+          onClick={() => router.push('/mission')}
+        >
+          🕵️ Mission
+        </button>
       </div>
 
       <div style={{ height: '1px', background: 'var(--border)', marginBottom: '2rem' }} />
-
+ 
       {/* Due for review */}
       {dueCount > 0 && (
         <div style={{ marginBottom: '2rem' }}>
@@ -324,7 +335,8 @@ function Dashboard() {
         )}
       </div>
 
-      <div style={{ height: '1px', background: 'var(--border)', marginBottom: '1.5rem' }} />
+      <div style={{ height: '1px', background: 'var(--border)', margin: '1.5rem 0' }} />
+      <NotificationSettings uid={uid} />
 
       {/* Profile */}
       {!editingProfile ? (
@@ -336,6 +348,9 @@ function Dashboard() {
             }}>
               Your profile
             </p>
+            <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '6px' }}>
+              {profile?.email}
+            </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               <span className="pill pill-gray">{nativeInfo?.flag} {nativeInfo?.label}</span>
               <span style={{ fontSize: '12px', color: 'var(--muted)', alignSelf: 'center' }}>→</span>
@@ -346,10 +361,27 @@ function Dashboard() {
               ))}
             </div>
           </div>
-          <button className="btn" style={{ fontSize: '13px', flexShrink: 0, marginLeft: '12px' }}
-            onClick={openEdit}>
-            Edit
-          </button>
+
+          {/* Edit + Sign out */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '12px', flexShrink: 0 }}>
+            <button
+              className="btn"
+              style={{ fontSize: '13px' }}
+              onClick={openEdit}
+            >
+              Edit
+            </button>
+            <button
+              className="btn"
+              style={{ fontSize: '13px', color: '#A32D2D', borderColor: '#E24B4A' }}
+              onClick={async () => {
+                await signOut();
+                router.push('/');
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
       ) : (
