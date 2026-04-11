@@ -1,123 +1,197 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Gengo Dojo — Global Design System ──────────────────
+   Dark spy aesthetic: deep navy bg, neon green accents,
+   circuit board texture, glowing nodes
+─────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #ffffff;
-  --fg: #111111;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --surface: #f9fafb;
-  --teal: #1D9E75;
-  --teal-light: #E1F5EE;
-  --teal-dark: #0F6E56;
-  /* Add these two lines: */
-  --font-noto-jp: 'Noto Sans JP', sans-serif;
-  --font-noto-sc: 'Noto Sans SC', sans-serif;
+  /* ── Core palette ── */
+  --bg:           #0a0e1a;
+  --bg-secondary: #0f1628;
+  --surface:      #141d35;
+  --surface-2:    #1a2440;
+  --border:       rgba(100, 200, 150, 0.12);
+  --border-bright:rgba(100, 200, 150, 0.3);
+
+  /* ── Neon accents ── */
+  --neon:         #00e87a;
+  --neon-dim:     rgba(0, 232, 122, 0.15);
+  --neon-glow:    0 0 20px rgba(0, 232, 122, 0.4);
+  --purple:       #7F77DD;
+  --purple-dim:   rgba(127, 119, 221, 0.15);
+  --amber:        #EF9F27;
+  --red:          #E24B4A;
+  --blue:         #378ADD;
+
+  /* ── Text ── */
+  --fg:           #e8f0e9;
+  --muted:        rgba(200, 220, 210, 0.45);
+  --muted-bright: rgba(200, 220, 210, 0.7);
+
+  /* ── Screen accent colors ── */
+  --c-flash:      #00e87a;   /* flashcards */
+  --c-quiz:       #378ADD;   /* quiz */
+  --c-survival:   #E24B4A;   /* survival */
+  --c-mission:    #7F77DD;   /* mission */
+  --c-shadow:     #EF9F27;   /* shadow */
+  --c-write:      #D4537E;   /* write */
+  --c-kana:       #5DCAA5;   /* kana */
+  --c-words:      #9FE1CB;   /* word list */
+
+  /* ── Fonts ── */
+  --font-ui:      'Space Grotesk', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* ── Sizing ── */
+  --radius:       14px;
+  --radius-sm:    8px;
+  --radius-lg:    20px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f0f0f;
-    --fg: #f0f0f0;
-    --muted: #9ca3af;
-    --border: #2a2a2a;
-    --surface: #1a1a1a;
-  }
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-* { box-sizing: border-box; }
-
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-noto-jp), var(--font-noto-sc), var(--font-geist-sans), -apple-system, sans-serif;
+html, body {
+  background:  var(--bg);
+  color:       var(--fg);
+  font-family: var(--font-ui);
+  font-size:   16px;
+  line-height: 1.5;
+  min-height:  100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Force Japanese/Chinese font for CJK characters */
-@font-face {
-  unicode-range: U+4E00-9FFF, U+3040-309F, U+30A0-30FF;
-}
-.kanji,
-[lang="ja"] {
-  font-family: var(--font-noto-jp), var(--font-noto-sc), 'Noto Sans JP', 'Noto Sans SC', serif;
+/* ── Circuit board background pattern ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,232,122,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
+/* ── All pages sit above the pattern ── */
+main { position: relative; z-index: 1; }
+
+/* ── Base button ── */
 .btn {
-  display: inline-flex;
-  align-items: center;
+  display:       inline-flex;
+  align-items:   center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--fg);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
-  white-space: nowrap;
+  gap:           6px;
+  padding:       8px 16px;
+  border-radius: var(--radius-sm);
+  border:        1px solid var(--border-bright);
+  background:    var(--surface);
+  color:         var(--fg);
+  font-family:   var(--font-ui);
+  font-size:     14px;
+  font-weight:   500;
+  cursor:        pointer;
+  transition:    all 0.15s ease;
+  white-space:   nowrap;
 }
-.btn:hover  { background: var(--surface); }
-.btn:active { transform: scale(0.98); }
+.btn:hover  { background: var(--surface-2); border-color: rgba(0,232,122,0.4); }
+.btn:active { transform: scale(0.97); }
+
+/* ── Primary button — neon green ── */
 .btn-primary {
-  background: var(--fg);
-  color: var(--bg);
-  border-color: var(--fg);
+  background:    var(--neon);
+  color:         #032010;
+  border-color:  var(--neon);
+  font-weight:   600;
 }
-.btn-primary:hover { opacity: 0.85; background: var(--fg); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border-radius: 99px;
-  font-size: 13px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all 0.15s;
-  user-select: none;
-  background: var(--surface);
-  color: var(--muted);
-}
-.tag.selected {
-  background: var(--teal-light);
-  border-color: var(--teal);
-  color: var(--teal-dark);
-  font-weight: 500;
+.btn-primary:hover {
+  background:  #00ff87;
+  border-color: #00ff87;
+  box-shadow:  var(--neon-glow);
 }
 
-.card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-}
-
-.pill {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.pill-teal   { background: var(--teal-light); color: var(--teal-dark); }
-.pill-amber  { background: #FAEEDA; color: #854F0B; }
-.pill-blue   { background: #E6F1FB; color: #185FA5; }
-.pill-gray   { background: var(--surface); color: var(--muted); }
-
+/* ── Progress bar ── */
 .progress-track {
-  height: 4px;
-  background: var(--surface);
+  height:        4px;
+  background:    var(--surface-2);
   border-radius: 2px;
+  overflow:      hidden;
+  border:        none;
 }
 .progress-fill {
-  height: 4px;
-  background: var(--teal);
+  height:        4px;
+  background:    var(--neon);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition:    width 0.4s ease;
+  box-shadow:    0 0 8px rgba(0,232,122,0.5);
 }
-.btn.w-full { width: 100%; }
+
+/* ── Pills ── */
+.pill {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       3px 10px;
+  border-radius: 99px;
+  font-size:     11px;
+  font-weight:   500;
+  white-space:   nowrap;
+}
+.pill-gray  { background: var(--surface-2); color: var(--muted-bright); border: 1px solid var(--border); }
+.pill-teal  { background: rgba(0,232,122,0.12); color: var(--neon); border: 1px solid rgba(0,232,122,0.25); }
+.pill-blue  { background: rgba(55,138,221,0.12); color: #7bbfff; border: 1px solid rgba(55,138,221,0.25); }
+.pill-amber { background: rgba(239,159,39,0.12); color: var(--amber); border: 1px solid rgba(239,159,39,0.25); }
+.pill-red   { background: rgba(226,75,74,0.12);  color: #ff8080; border: 1px solid rgba(226,75,74,0.25); }
+
+/* ── Neon border card ── */
+.neon-card {
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: var(--radius);
+}
+.neon-card:hover { border-color: var(--border-bright); }
+
+/* ── Input ── */
+input[type="text"], input[type="email"], textarea {
+  background:   var(--surface);
+  border:       1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color:        var(--fg);
+  font-family:  var(--font-ui);
+  font-size:    14px;
+  padding:      10px 14px;
+  outline:      none;
+  transition:   border-color 0.15s;
+  width:        100%;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: rgba(0,232,122,0.5);
+  box-shadow:   0 0 0 3px rgba(0,232,122,0.08);
+}
+
+/* ── Glow utility ── */
+.glow-green  { box-shadow: 0 0 20px rgba(0,232,122,0.35); }
+.glow-purple { box-shadow: 0 0 20px rgba(127,119,221,0.35); }
+.glow-red    { box-shadow: 0 0 20px rgba(226,75,74,0.35); }
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.05); } }
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 12px rgba(0,232,122,0.3); }
+  50%     { box-shadow: 0 0 28px rgba(0,232,122,0.7); }
+}
+
+/* ── Noto fonts for CJK ── */
+.cjk {
+  font-family: 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans KR', serif;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 2px; }
