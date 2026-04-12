@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
-import { updateAgentAfterMission, getAgentProfile } from '@/lib/agent';
+import { getAgentProfile, updateAgentAfterMission } from '@/lib/agent';
 import { Word, Progress, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -37,7 +37,7 @@ function BrainDeadMission() {
   const [pairs, setPairs]           = useState<MatchPair[]>([]);
   const [meanings, setMeanings]     = useState<{ wordId: string; meaning: string }[]>([]);
   const [selectedKanji, setSelectedKanji] = useState<string | null>(null);
-  const [wrongPair, setWrongPair]   = useState<string | null>(null);
+  const [wrongFlash, setWrongFlash] = useState<string | null>(null);
   const [done, setDone]             = useState(false);
   const [stats, setStats]           = useState({ correct: 0, wrong: 0 });
   const [loading, setLoading]       = useState(true);
@@ -61,12 +61,7 @@ function BrainDeadMission() {
       ]);
       setProgress(prog);
       const selected = ws.sort(() => Math.random() - 0.5).slice(0, 8);
-      const p: MatchPair[] = selected.map(w => ({
-        wordId:  w.id,
-        kanji:   w.kanji,
-        meaning: w.meaning,
-        matched: false,
-      }));
+      const p: MatchPair[] = selected.map(w => ({ wordId: w.id, kanji: w.kanji, meaning: w.meaning, matched: false }));
       setPairs(p);
       setMeanings(p.map(pp => ({ wordId: pp.wordId, meaning: pp.meaning })).sort(() => Math.random() - 0.5));
       setLoading(false);
@@ -79,109 +74,106 @@ function BrainDeadMission() {
     speak(kanji, targetLang);
   }
 
-    // After mission ends, instead of setPhase('done'):
-    async function endSession() {
-        const agentBefore = await getAgentProfile(uid);
-        const debrief = await updateAgentAfterMission(uid, stats.correct, stats.wrong, 'scrap');
-            
-        const params = new URLSearchParams({
-        correct:       String(stats.correct),
-        wrong:         String(stats.wrong),
-        mode:          'scrap',             // or 'deepwork' / 'braindead'
-        prevSuspicion: String(agentBefore?.suspicionLevel ?? 0),
-        prevChapter:   String(agentBefore?.chapter ?? 1),
-        prevStreak:    String(agentBefore?.streakDays ?? 0),
-        ...(debrief.newFragment ? { fragment: debrief.newFragment } : {}),
-        });
-        router.push(`/debrief?${params.toString()}`);
-    }
-
   async function handleSelectMeaning(wordId: string) {
     if (!selectedKanji) return;
     const pair = pairs.find(p => p.wordId === wordId);
     if (pair?.matched) return;
 
     if (selectedKanji === wordId) {
-      // Correct match
-      setPairs(prev => prev.map(p => p.wordId === wordId ? { ...p, matched: true } : p));
+      const newPairs = pairs.map(p => p.wordId === wordId ? { ...p, matched: true } : p);
+      setPairs(newPairs);
       setStats(s => ({ ...s, correct: s.correct + 1 }));
       const prev = progress[wordId];
       if (prev) rateWord(uid, wordId, 'good', prev, targetLang, nativeLang);
-
-      const allMatched = pairs.filter(p => p.wordId !== wordId).every(p => p.matched);
-      if (allMatched) {
+      if (newPairs.every(p => p.matched)) {
         setDone(true);
-        updateAgentAfterMission(uid, stats.correct + 1, stats.wrong, 'braindead').catch(() => {});
+        try {
+          const ag = await getAgentProfile(uid);
+          if (ag) {
+            const newCorrect = stats.correct + 1;
+            const params = new URLSearchParams({
+              correct: String(newCorrect), wrong: String(stats.wrong), mode: 'braindead',
+              prevSuspicion: String(ag.suspicionLevel), prevChapter: String(ag.chapter), prevStreak: String(ag.streakDays),
+            });
+            const debrief = await updateAgentAfterMission(uid, newCorrect, stats.wrong, 'braindead');
+            if (debrief.newFragment) params.set('fragment', debrief.newFragment);
+            setTimeout(() => router.push(`/debrief?${params.toString()}`), 800);
+          }
+        } catch { /* ignore */ }
       }
     } else {
-      // Wrong match
-      setWrongPair(selectedKanji);
+      setWrongFlash(selectedKanji);
       setStats(s => ({ ...s, wrong: s.wrong + 1 }));
       const prev = progress[selectedKanji];
       if (prev) rateWord(uid, selectedKanji, 'hard', prev, targetLang, nativeLang);
-      setTimeout(() => setWrongPair(null), 600);
+      setTimeout(() => setWrongFlash(null), 600);
     }
     setSelectedKanji(null);
   }
 
   const matched = pairs.filter(p => p.matched).length;
 
-  if (loading) return <Shell onBack={() => router.push('/mission')}><div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div></Shell>;
+  if (loading) return <Screen><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div></Screen>;
 
-  if (done) {
-    return (
-      <Shell onBack={() => router.push('/mission')}>
-        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-          <div style={{ fontSize: '52px', marginBottom: '1rem' }}>🌙</div>
-          <h2 style={{ fontSize: '22px', fontWeight: 600, marginBottom: '6px' }}>All matched</h2>
-          <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem' }}>
-            {stats.correct} correct · {stats.wrong} wrong
-          </p>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <button className="btn btn-primary" onClick={() => endSession()}>Debrief</button>
-          </div>
-        </div>
-      </Shell>
-    );
-  }
+  if (done) return (
+    <Screen>
+      <TopBar onBack={() => router.push('/mission')} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ fontSize: '64px', marginBottom: '1rem', filter: 'drop-shadow(0 0 20px rgba(55,138,221,0.5))' }}>🌙</div>
+        <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>All matched</h2>
+        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>
+          {stats.correct} correct · {stats.wrong} wrong
+        </p>
+        <p style={{ fontSize: '13px', color: 'rgba(55,138,221,0.8)', marginBottom: '1rem' }}>Redirecting to debrief…</p>
+      </div>
+    </Screen>
+  );
 
   return (
-    <Shell onBack={() => router.push('/mission')}>
+    <Screen>
+      <TopBar onBack={() => router.push('/mission')} />
 
       {/* Progress */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>
-          <span>{matched} / {pairs.length} matched</span>
-          <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>tap kanji → tap meaning</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)' }}>
+            {matched} / {pairs.length} matched
+          </span>
+          <span style={{ fontSize: '11px', color: 'rgba(55,138,221,0.7)', fontStyle: 'italic' }}>
+            tap kanji → tap meaning
+          </span>
         </div>
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${(matched / pairs.length) * 100}%` }} />
+        <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '3px', background: '#378ADD', borderRadius: '2px', width: `${(matched / pairs.length) * 100}%`, transition: 'width 0.4s', boxShadow: '0 0 8px rgba(55,138,221,0.5)' }} />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-
+      {/* Match grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', flex: 1 }}>
         {/* Left: kanji */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {pairs.map(p => (
             <button key={p.wordId} onClick={() => handleSelectKanji(p.wordId, p.kanji)}
               disabled={p.matched}
               style={{
-                padding: '16px', borderRadius: '12px',
+                padding: '16px', borderRadius: '12px', cursor: p.matched ? 'default' : 'pointer',
+                fontFamily: '"Noto Sans JP","Noto Sans SC",serif', fontSize: '28px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s', minHeight: '64px',
                 borderWidth: '1px', borderStyle: 'solid',
-                borderColor: p.matched ? '#1D9E75'
-                  : selectedKanji === p.wordId ? '#185FA5'
-                  : wrongPair === p.wordId ? '#E24B4A'
-                  : 'var(--border)',
-                background: p.matched ? '#E1F5EE'
-                  : selectedKanji === p.wordId ? '#E6F1FB'
-                  : wrongPair === p.wordId ? '#FCEBEB'
-                  : 'var(--surface)',
-                cursor: p.matched ? 'default' : 'pointer',
-                fontSize: '28px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif',
-                color: p.matched ? '#0F6E56' : 'var(--fg)',
-                textAlign: 'center', transition: 'all 0.15s',
-                opacity: p.matched ? 0.5 : 1,
+                borderColor: p.matched ? 'rgba(0,232,122,0.3)'
+                  : selectedKanji === p.wordId ? 'rgba(55,138,221,0.7)'
+                  : wrongFlash === p.wordId ? 'rgba(226,75,74,0.6)'
+                  : 'rgba(255,255,255,0.1)',
+                background: p.matched ? 'rgba(0,232,122,0.08)'
+                  : selectedKanji === p.wordId ? 'rgba(55,138,221,0.15)'
+                  : wrongFlash === p.wordId ? 'rgba(226,75,74,0.12)'
+                  : 'rgba(255,255,255,0.04)',
+                color: p.matched ? 'rgba(0,232,122,0.6)'
+                  : selectedKanji === p.wordId ? 'rgba(55,138,221,0.9)'
+                  : '#fff',
+                opacity: p.matched ? 0.4 : 1,
+                boxShadow: selectedKanji === p.wordId ? '0 0 16px rgba(55,138,221,0.3)' : 'none',
               }}>
               {p.kanji}
             </button>
@@ -196,17 +188,15 @@ function BrainDeadMission() {
               <button key={m.wordId} onClick={() => handleSelectMeaning(m.wordId)}
                 disabled={pair?.matched}
                 style={{
-                  padding: '16px', borderRadius: '12px',
+                  padding: '10px', borderRadius: '12px', cursor: pair?.matched ? 'default' : 'pointer',
+                  fontSize: '12px', fontFamily: 'var(--font-ui)', lineHeight: 1.3,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                  minHeight: '64px', transition: 'all 0.15s',
                   borderWidth: '1px', borderStyle: 'solid',
-                  borderColor: pair?.matched ? '#1D9E75' : 'var(--border)',
-                  background:  pair?.matched ? '#E1F5EE'  : 'var(--surface)',
-                  cursor: pair?.matched ? 'default' : 'pointer',
-                  fontSize: '13px', color: pair?.matched ? '#0F6E56' : 'var(--fg)',
-                  textAlign: 'center', transition: 'all 0.15s',
-                  opacity: pair?.matched ? 0.5 : 1,
-                  minHeight: '60px', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'inherit', lineHeight: 1.3,
+                  borderColor: pair?.matched ? 'rgba(0,232,122,0.3)' : 'rgba(255,255,255,0.1)',
+                  background: pair?.matched ? 'rgba(0,232,122,0.08)' : 'rgba(255,255,255,0.04)',
+                  color: pair?.matched ? 'rgba(0,232,122,0.6)' : 'rgba(255,255,255,0.8)',
+                  opacity: pair?.matched ? 0.4 : 1,
                 }}>
                 {m.meaning}
               </button>
@@ -215,24 +205,38 @@ function BrainDeadMission() {
         </div>
       </div>
 
-    </Shell>
+      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
+    </Screen>
   );
 }
 
-function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1rem 4rem', background: 'var(--bg)' }}>
-      <div style={{ width: '100%', maxWidth: '680px', display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>← Back</button>
-        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem' }}>🌙 Brain Dead</span>
-      </div>
-      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem' }}>
+    <main style={{
+      minHeight: '100vh',
+      background: '#030810',
+      backgroundImage: 'radial-gradient(ellipse at top left, #0a1a30 0%, #030810 60%, #010508 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '1.5rem 1.25rem 2rem', fontFamily: 'var(--font-ui)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(55,138,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
   );
 }
-function Spinner() {
-  return <div style={{ width: '24px', height: '24px', border: '2px solid var(--border)', borderTopColor: 'var(--muted)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto' }} />;
+
+function TopBar({ onBack }: { onBack: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>🌙 Brain Dead</span>
+      <div style={{ width: '60px' }} />
+    </div>
+  );
 }
+
+const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+function Spinner() { return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(55,138,221,0.15)', borderTopColor: '#378ADD', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }

@@ -4,38 +4,80 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getProgress, getUserWords } from '@/lib/firestore';
-import { getAgentProfile, createAgentProfile, getCoverColor, getCoverBg, getSuspicionLabel } from '@/lib/agent';
-import { AgentProfile, ENERGY_MODES, ModeConfig } from '@/lib/types';
+import { getAgentProfile, createAgentProfile, getCoverColor, getSuspicionLabel } from '@/lib/agent';
+import { AgentProfile, ENERGY_MODES } from '@/lib/types';
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function MissionPage() {
-  return <AuthGuard><MissionBriefing /></AuthGuard>;
+  return <AuthGuard><MissionMap /></AuthGuard>;
 }
 
-function MissionBriefing() {
+const MISSIONS = [
+  {
+    id:       'braindead',
+    number:   1,
+    label:    'Brain Dead',
+    sublabel: 'Passive matching',
+    emoji:    '🌙',
+    color:    '#378ADD',
+    route:    '/mission/braindead',
+  },
+  {
+    id:       'scrap',
+    number:   2,
+    label:    'Scrap',
+    sublabel: '30 sec blitz',
+    emoji:    '⚡',
+    color:    '#EF9F27',
+    route:    '/mission/scrap',
+  },
+  {
+    id:       'deepwork',
+    number:   3,
+    label:    'Deep Work',
+    sublabel: '20 min immersion',
+    emoji:    '🧠',
+    color:    '#00e87a',
+    route:    '/mission/deepwork',
+  },
+  {
+    id:       'shadow',
+    number:   4,
+    label:    'Shadow',
+    sublabel: 'Pronunciation',
+    emoji:    '🎤',
+    color:    '#7F77DD',
+    route:    '/shadow',
+  },
+  {
+    id:       'survival',
+    number:   5,
+    label:    'Survival',
+    sublabel: '3 lives · timed',
+    emoji:    '💀',
+    color:    '#E24B4A',
+    route:    '/survival',
+  },
+];
+
+function MissionMap() {
   const router = useRouter();
 
   const [agent, setAgent]       = useState<AgentProfile | null>(null);
   const [dueCount, setDueCount] = useState(0);
   const [totalWords, setTotalWords] = useState(0);
   const [loading, setLoading]   = useState(true);
-  const [uid, setUid]           = useState('');
-  const [selectedMode, setSelectedMode] = useState<ModeConfig>(ENERGY_MODES[1]);
 
   useEffect(() => {
     return onAuth(async (user) => {
       if (!user) return;
-      setUid(user.uid);
-
       const profile = await getUserProfile(user.uid);
       if (!profile) { router.push('/'); return; }
 
-      let agentProfile = await getAgentProfile(user.uid);
-      if (!agentProfile) {
-        agentProfile = await createAgentProfile(user.uid, profile.targetLang);
-      }
-      setAgent(agentProfile);
+      let ag = await getAgentProfile(user.uid);
+      if (!ag) ag = await createAgentProfile(user.uid, profile.targetLang);
+      setAgent(ag);
 
       const [words, prog] = await Promise.all([
         getUserWords(user.uid, profile.targetLang, profile.nativeLang),
@@ -47,233 +89,241 @@ function MissionBriefing() {
     });
   }, []);
 
-  if (loading) {
-    return (
-      <Shell onBack={() => router.push('/dashboard')}>
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div>
-      </Shell>
-    );
-  }
+  if (loading) return (
+    <Screen>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+        <Spinner />
+      </div>
+    </Screen>
+  );
 
   if (!agent) return null;
 
   const coverColor = getCoverColor(agent.coverStatus);
-  const coverBg    = getCoverBg(agent.coverStatus);
+  const canPlay    = totalWords >= 4;
 
   return (
-    <Shell onBack={() => router.push('/dashboard')}>
+    <Screen>
 
-      {/* Agent status card */}
-      <div style={{
-        background: coverBg,
-        borderWidth: '1px', borderStyle: 'solid', borderColor: coverColor,
-        borderRadius: '16px', padding: '1.25rem',
-        marginBottom: '1.5rem',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>← Back</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+            🕵️
+          </div>
           <div>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: coverColor, fontWeight: 500, marginBottom: '2px' }}>
-              Agent
-            </p>
-            <p style={{ fontSize: '20px', fontWeight: 600, color: coverColor }}>
-              {agent.codename}
-            </p>
+            <p style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.9)', lineHeight: 1 }}>Agent {agent.codename}</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{agent.city}</p>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: coverColor, fontWeight: 500, marginBottom: '2px' }}>
-              Cover
-            </p>
-            <p style={{ fontSize: '16px', fontWeight: 600, color: coverColor }}>
-              {agent.coverStatus === 'intact' ? '✓ Intact'
-                : agent.coverStatus === 'compromised' ? '⚠ Compromised'
-                : '✗ Blown'}
-            </p>
+        </div>
+      </div>
+
+      {/* Agent status strip */}
+      <div style={{
+        background: 'rgba(0,0,0,0.3)', borderRadius: '12px',
+        padding: '12px 16px', marginBottom: '1.5rem',
+        border: `1px solid ${coverColor}40`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{agent.streakDays}</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>streak</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{agent.chapter}</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>chapter</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: dueCount > 0 ? '#EF9F27' : '#fff' }}>{dueCount}</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>due</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{agent.totalMissions}</p>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>missions</p>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-          {[
-            { label: 'City',      value: agent.city },
-            { label: 'Chapter',   value: agent.chapter },
-            { label: 'Streak',    value: `${agent.streakDays}d` },
-            { label: 'Suspicion', value: getSuspicionLabel(agent.suspicionLevel) },
-          ].map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: coverColor }}>{s.value}</p>
-              <p style={{ fontSize: '10px', color: coverColor, opacity: 0.7 }}>{s.label}</p>
-            </div>
-          ))}
+        <div style={{
+          padding: '5px 12px', borderRadius: '99px', fontSize: '11px', fontWeight: 600,
+          background: `${coverColor}25`, color: coverColor, border: `1px solid ${coverColor}40`,
+        }}>
+          {agent.coverStatus === 'intact' ? '✓ Intact'
+            : agent.coverStatus === 'compromised' ? '⚠ Compromised' : '✗ Blown'}
         </div>
+      </div>
 
-        {/* Suspicion bar */}
-        <div style={{ marginTop: '10px' }}>
-          <div style={{ height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: '2px' }}>
+      {/* Suspicion bar */}
+      {agent.suspicionLevel > 0 && (
+        <div style={{ marginBottom: '1.5rem', padding: '10px 14px', background: 'rgba(226,75,74,0.1)', borderRadius: '10px', border: '1px solid rgba(226,75,74,0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>SUSPICION LEVEL</span>
+            <span style={{ fontSize: '11px', color: '#E24B4A' }}>{getSuspicionLabel(agent.suspicionLevel)}</span>
+          </div>
+          <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
             <div style={{
               height: '4px', borderRadius: '2px',
               width: `${(agent.suspicionLevel / 5) * 100}%`,
-              background: coverColor,
+              background: '#E24B4A', boxShadow: '0 0 8px rgba(226,75,74,0.6)',
               transition: 'width 0.4s ease',
             }} />
           </div>
-          <p style={{ fontSize: '10px', color: coverColor, marginTop: '3px', opacity: 0.7 }}>
-            Suspicion: {agent.suspicionLevel}/5
-          </p>
+          {agent.suspicionLevel >= 5 && (
+            <button onClick={() => router.push('/interrogation')} style={{
+              marginTop: '10px', width: '100%', padding: '10px',
+              background: 'rgba(226,75,74,0.2)', border: '1px solid rgba(226,75,74,0.4)',
+              borderRadius: '8px', color: '#E24B4A', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'var(--font-ui)',
+            }}>
+              ⚠ Enter interrogation
+            </button>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Mission stats */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '10px', marginBottom: '1.5rem',
-      }}>
-        {[
-          { label: 'Words',    value: totalWords },
-          { label: 'Due',      value: dueCount },
-          { label: 'Missions', value: agent.totalMissions },
-        ].map(s => (
-          <div key={s.label} style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '12px', padding: '14px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 600 }}>{s.value}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ height: '1px', background: 'var(--border)', marginBottom: '1.5rem' }} />
-
-      {/* Mode selector */}
-      <p style={{
-        fontSize: '11px', textTransform: 'uppercase',
-        letterSpacing: '0.08em', color: 'var(--muted)',
-        fontWeight: 500, marginBottom: '10px',
-      }}>
-        Select mission type
+      {/* Title */}
+      <p style={{ fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem', textAlign: 'center' }}>
+        SELECT MISSION
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-        {ENERGY_MODES.map(mode => {
-          const isSelected = selectedMode.id === mode.id;
+      {/* Mission path map — rendered bottom to top like the reference */}
+      <div style={{ position: 'relative', padding: '0 24px', flex: 1 }}>
+
+        {/* Central connecting line */}
+        <div style={{
+          position: 'absolute',
+          left: '50%', transform: 'translateX(-50%)',
+          top: '40px', bottom: '40px',
+          width: '2px',
+          background: 'linear-gradient(to bottom, rgba(0,232,122,0.6), rgba(0,232,122,0.05))',
+        }} />
+
+        {[...MISSIONS].reverse().map((mission, i) => {
+          const isLeft   = i % 2 === 0;
+          const active   = canPlay;
+          const isFirst  = i === 0;
+
           return (
-            <button
-              key={mode.id}
-              onClick={() => setSelectedMode(mode)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '14px',
-                padding: '14px 16px', borderRadius: '14px',
-                borderWidth: '1px', borderStyle: 'solid',
-                borderColor: isSelected ? 'var(--teal)' : 'var(--border)',
-                background:  isSelected ? 'var(--teal-light)' : 'var(--surface)',
-                cursor: 'pointer', fontFamily: 'inherit',
-                textAlign: 'left', width: '100%',
-                transition: 'all 0.15s',
-              }}
-            >
-              <span style={{ fontSize: '28px' }}>{mode.emoji}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                  <span style={{
-                    fontSize: '15px', fontWeight: 600,
-                    color: isSelected ? 'var(--teal-dark)' : 'var(--fg)',
-                  }}>
-                    {mode.label}
-                  </span>
-                  <span style={{
-                    fontSize: '11px', padding: '2px 8px', borderRadius: '99px',
-                    background: isSelected ? 'var(--teal)' : 'var(--border)',
-                    color: isSelected ? 'var(--teal-light)' : 'var(--muted)',
-                  }}>
-                    {mode.duration}
-                  </span>
-                  {mode.encounterChance > 0 && (
-                    <span style={{
-                      fontSize: '11px', padding: '2px 8px', borderRadius: '99px',
-                      background: '#FAEEDA', color: '#854F0B',
-                    }}>
-                      ⚡ encounters
-                    </span>
-                  )}
-                </div>
-                <span style={{
-                  fontSize: '13px',
-                  color: isSelected ? 'var(--teal-dark)' : 'var(--muted)',
-                }}>
-                  {mode.description}
-                </span>
+            <div key={mission.id} style={{
+              display: 'flex',
+              flexDirection: isLeft ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              marginBottom: '20px',
+              position: 'relative',
+            }}>
+              {/* Node */}
+              <button
+                disabled={!active}
+                onClick={() => active && router.push(mission.route)}
+                style={{
+                  width: '60px', height: '60px', borderRadius: '50%', flexShrink: 0,
+                  border: `2px solid ${active ? mission.color : 'rgba(255,255,255,0.15)'}`,
+                  background: active ? `${mission.color}20` : 'rgba(255,255,255,0.05)',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  cursor: active ? 'pointer' : 'default',
+                  boxShadow: active ? `0 0 20px ${mission.color}50` : 'none',
+                  animation: isFirst && active ? 'glow-node 2s ease-in-out infinite' : 'none',
+                  transition: 'all 0.2s', zIndex: 2, position: 'relative',
+                  fontFamily: 'var(--font-ui)',
+                }}
+              >
+                <span style={{ fontSize: '22px' }}>{active ? mission.emoji : '🔒'}</span>
+                {!active && (
+                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>locked</span>
+                )}
+              </button>
+
+              {/* Connector line to center */}
+              <div style={{
+                flex: 1, height: '1px',
+                background: active
+                  ? `linear-gradient(${isLeft ? 'to left' : 'to right'}, transparent, ${mission.color}50)`
+                  : 'rgba(255,255,255,0.08)',
+              }} />
+
+              {/* Label */}
+              <div style={{
+                background: active ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${active ? `${mission.color}30` : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: '10px', padding: '8px 12px', minWidth: '110px',
+                opacity: active ? 1 : 0.4,
+              }}>
+                <p style={{ fontSize: '12px', fontWeight: 600, color: active ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+                  Mission {mission.number}: {mission.label}
+                </p>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                  {mission.sublabel}
+                </p>
+                {active && (
+                  <p style={{ fontSize: '10px', color: mission.color, marginTop: '4px', fontWeight: 600 }}>
+                    Available
+                  </p>
+                )}
               </div>
-              {isSelected && (
-                <span style={{ color: 'var(--teal)', fontSize: '16px' }}>✓</span>
-              )}
-            </button>
+            </div>
           );
         })}
       </div>
 
-      {/* Blown cover warning */}
-      {agent.coverStatus === 'blown' && (
+      {!canPlay && (
         <div style={{
-          background: '#FCEBEB', borderWidth: '1px', borderStyle: 'solid', borderColor: '#E24B4A',
-          borderRadius: '12px', padding: '12px 16px',
-          fontSize: '13px', color: '#A32D2D',
-          marginBottom: '1.5rem', lineHeight: 1.6,
+          textAlign: 'center', padding: '12px 16px',
+          background: 'rgba(255,255,255,0.05)', borderRadius: '10px',
+          border: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem',
         }}>
-          ✗ Your cover is blown. Complete a mission to restore it.
-          Wrong answers raised your suspicion too high.
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+            Generate at least 4 words to unlock missions
+          </p>
+          <button onClick={() => router.push('/dashboard')} style={{ ...GHOST_BTN, marginTop: '8px', fontSize: '13px' }}>
+            Go to dashboard →
+          </button>
         </div>
       )}
 
-      {/* Launch mission */}
-      <button
-        className="btn btn-primary"
-        style={{ width: '100%', padding: '14px', fontSize: '16px' }}
-        disabled={totalWords < 4}
-        onClick={() => router.push(`/mission/${selectedMode.id}`)}
-      >
-        {totalWords < 4
-          ? 'Need at least 4 words'
-          : `Launch ${selectedMode.label} mission →`}
-      </button>
-
-    </Shell>
+      <style>{`
+        @keyframes glow-node {
+          0%,100% { box-shadow: 0 0 16px rgba(0,232,122,0.4); }
+          50%      { box-shadow: 0 0 32px rgba(0,232,122,0.8); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </Screen>
   );
 }
 
-function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+function Screen({ children }: { children: React.ReactNode }) {
   return (
     <main style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', padding: '2rem 1rem 4rem', background: 'var(--bg)',
+      minHeight: '100vh',
+      background: '#060d1f',
+      backgroundImage: `
+        radial-gradient(ellipse at 20% 50%, rgba(127,119,221,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0,232,122,0.05) 0%, transparent 40%),
+        linear-gradient(rgba(0,232,122,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,232,122,0.02) 1px, transparent 1px)
+      `,
+      backgroundSize: 'auto, auto, 40px 40px, 40px 40px',
+      display: 'flex', flexDirection: 'column',
+      padding: '1.5rem 1.25rem 2rem',
+      fontFamily: 'var(--font-ui)',
     }}>
-      <div style={{
-        width: '100%', maxWidth: '680px',
-        display: 'flex', alignItems: 'center', marginBottom: '1.5rem',
-      }}>
-        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>← Back</button>
-        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem', letterSpacing: '-0.02em' }}>
-          🕵️ Mission Briefing
-        </span>
-      </div>
-      <div style={{
-        width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
-      }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </main>
   );
 }
 
+const GHOST_BTN: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: '8px', padding: '7px 14px',
+  color: 'rgba(255,255,255,0.7)', fontSize: '13px',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)',
+};
+
 function Spinner() {
-  return (
-    <div style={{
-      width: '24px', height: '24px',
-      border: '2px solid var(--border)', borderTopColor: 'var(--muted)',
-      borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto',
-    }} />
-  );
+  return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
 }
