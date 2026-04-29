@@ -48,7 +48,7 @@ function GCSEPapers() {
     setPhase('generating');
     setError('');
     try {
-      const res  = await fetch('/api/gcse/mock-paper', {
+      const res  = await fetch('/api/gcse/english/mock-paper', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paper }),
@@ -73,7 +73,7 @@ function GCSEPapers() {
     setTimerActive(false);
     setPhase('submitting');
     try {
-      const res  = await fetch('/api/gcse/mark-mock', {
+      const res  = await fetch('/api/gcse/english/mark-mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mock, answers: Object.entries(answers).map(([num, text]) => ({ questionNum: Number(num), text })) }),
