@@ -64,7 +64,7 @@ function GCSEWriting() {
     setPhase('marking');
     setError('');
     try {
-      const res  = await fetch('/api/gcse/mark-writing', {
+      const res  = await fetch('/api/gcse/english/mark-writing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: selectedPrompt, essay }),

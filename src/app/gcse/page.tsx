@@ -12,7 +12,7 @@ const SUBJECTS = [
     id:       'english',
     emoji:    '??',
     label:    'English Language',
-    board:    'AQA ， Year 11',
+    board:    'AQA Year 11',
     desc:     'Reading comprehension, language analysis, creative and transactional writing. AI marks every response.',
     sections: ['Reading', 'Language Analysis', 'Writing', 'Vocabulary', 'Mock Papers'],
     color:    '#7F77DD',
@@ -25,20 +25,20 @@ const SUBJECTS = [
     id:       'maths',
     emoji:    '??',
     label:    'Mathematics',
-    board:    'AQA ， Year 11',
+    board:    'AQA Year 11',
     desc:     'Algebra, geometry, statistics, and number. Step-by-step worked solutions with AI marking.',
     sections: ['Algebra', 'Geometry', 'Statistics', 'Number', 'Practice Papers'],
     color:    '#378ADD',
     dim:      'rgba(55,138,221,0.12)',
     border:   'rgba(55,138,221,0.3)',
     route:    '/gcse/maths',
-    ready:    false,
+    ready:    true,
   },
   {
     id:       'science',
     emoji:    '??',
     label:    'Combined Science',
-    board:    'AQA ， Year 11',
+    board:    'AQA Year 11',
     desc:     'Biology, chemistry, and physics. Key equations, required practicals, and exam questions.',
     sections: ['Biology', 'Chemistry', 'Physics', 'Equations', 'Practice Papers'],
     color:    '#00e87a',
@@ -56,15 +56,15 @@ function GCSESubjectPicker() {
     <Screen>
       {/* Header */}
       <div style={{ marginBottom: '1.75rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>○ Dashboard</button>
+        <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>Dashboard</button>
       </div>
 
       <div style={{ marginBottom: '1.75rem' }}>
         <p style={{ fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-          AQA ， YEAR 11
+          AQA YEAR 11
         </p>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', marginBottom: '6px' }}>
-          ?? GCSE Prep
+          GCSE Prep
         </h1>
         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
           AI-powered exam preparation. Choose a subject to begin.
@@ -150,7 +150,7 @@ function GCSESubjectPicker() {
         borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)',
         fontSize: '12px', color: 'rgba(255,255,255,0.3)', textAlign: 'center',
       }}>
-        Maths and Science coming soon ！ English is fully available now
+        Maths and Science coming soon English is fully available now
       </div>
     </Screen>
   );

@@ -52,7 +52,7 @@ function GCSEReading() {
     setPhase('generating');
     setError('');
     try {
-      const res  = await fetch('/api/gcse/reading', {
+      const res  = await fetch('/api/gcse/english/reading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paper }),
@@ -74,7 +74,7 @@ function GCSEReading() {
     if (!session || marking) return;
     setMarking(true);
     try {
-      const res  = await fetch('/api/gcse/mark-reading', {
+      const res  = await fetch('/api/gcse/english/mark-reading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

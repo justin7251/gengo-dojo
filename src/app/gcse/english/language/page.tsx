@@ -60,7 +60,7 @@ function GCSELanguage() {
     setError('');
     setPhase('generating');
     try {
-      const res  = await fetch('/api/gcse/language', {
+      const res  = await fetch('/api/gcse/english/language', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -90,7 +90,7 @@ function GCSELanguage() {
     setMarking(true);
     setError('');
     try {
-      const res  = await fetch('/api/gcse/mark-language', {
+      const res  = await fetch('/api/gcse/english/mark-language', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session, identified, peters }),
