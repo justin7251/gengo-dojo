@@ -45,7 +45,7 @@ const SUBJECTS = [
     dim:      'rgba(0,232,122,0.1)',
     border:   'rgba(0,232,122,0.25)',
     route:    '/gcse/science',
-    ready:    false,
+    ready:    true,
   },
 ];
 

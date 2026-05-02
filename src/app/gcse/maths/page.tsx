@@ -120,6 +120,21 @@ function GCSEMathsHub() {
 
       {/* Section cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+        <button onClick={() => router.push('/gcse/maths/learn')} style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '14px 16px', borderRadius: '14px', cursor: 'pointer',
+          border: '1px solid rgba(127,119,221,0.4)',
+          background: 'rgba(127,119,221,0.12)',
+          fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
+          marginBottom: '1rem',
+        }}>
+          <span style={{ fontSize: '24px' }}>📚</span>
+          <div>
+            <p style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>Learn a topic first</p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>7 swipeable lesson cards before you practise</p>
+          </div>
+          <span style={{ marginLeft: 'auto', fontSize: '18px', color: 'rgba(127,119,221,0.7)' }}>›</span>
+        </button>
         {SECTIONS.map(s => (
           <button
             key={s.id}
