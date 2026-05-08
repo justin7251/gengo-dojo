@@ -3,20 +3,32 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ── Types ──────────────────────────────────────────────
-export type CardType = 'EXPLAIN' | 'EXAMPLE' | 'VISUAL' | 'MISTAKE' | 'MEMORY' | 'PRACTICE' | 'SUMMARY';
+// ── Card types ─────────────────────────────────────────
+export type CardType = 'HOOK' | 'ANALOGY' | 'RULE' | 'EXAMPLE' | 'BLANK' | 'EXPLAIN' | 'RECALL';
 
 export interface LessonCard {
-  type:        CardType;
-  title:       string;
-  content:     string | null;
-  highlight?:  string | null;
-  steps?:      string[];
-  bullets?:    string[];
-  wrong?:      string;
-  right?:      string;
-  annotation?: string;
-  answer?:     string;
+  type: CardType;
+  // HOOK + RECALL
+  question?:    string;
+  guesses?:     string[];
+  answer?:      string;
+  hook?:        string | null;
+  // ANALOGY
+  analogy?:     string;
+  connection?:  string;
+  visual?:      string;
+  // RULE
+  rule?:        string;
+  formula?:     string | null;
+  // EXAMPLE
+  scenario?:    string;
+  steps?:       string[];
+  // BLANK
+  sentence?:    string;
+  hint?:        string;
+  // EXPLAIN
+  prompt?:      string;
+  modelAnswer?: string;
 }
 
 export interface Lesson {
@@ -26,322 +38,461 @@ export interface Lesson {
 }
 
 interface Props {
-  lesson:       Lesson;
+  lesson:        Lesson;
   practiseRoute: string;
-  accentColor:  string;
-  onBack:       () => void;
+  accentColor:   string;
+  onBack:        () => void;
+  onComplete?:   (score: number, total: number) => void;
 }
 
-// ── Card type meta ─────────────────────────────────────
-const CARD_META: Record<CardType, { emoji: string; label: string; bg: string }> = {
-  EXPLAIN:  { emoji: '💡', label: 'Explanation',  bg: 'rgba(55,138,221,0.12)'  },
-  EXAMPLE:  { emoji: '📝', label: 'Example',      bg: 'rgba(0,232,122,0.1)'    },
-  VISUAL:   { emoji: '🗺️', label: 'Visual',       bg: 'rgba(127,119,221,0.12)' },
-  MISTAKE:  { emoji: '⚠️', label: 'Watch out',    bg: 'rgba(226,75,74,0.1)'    },
-  MEMORY:   { emoji: '🧠', label: 'Memory trick', bg: 'rgba(239,159,39,0.1)'   },
-  PRACTICE: { emoji: '✏️', label: 'Practice',     bg: 'rgba(212,83,126,0.1)'   },
-  SUMMARY:  { emoji: '⭐', label: 'Summary',      bg: 'rgba(0,232,122,0.1)'    },
+// Phase labels and colours
+const PHASE_META: Record<CardType, { phase: string; label: string; phaseColor: string }> = {
+  HOOK:    { phase: '01', label: 'Think about it',  phaseColor: '#EF9F27' },
+  ANALOGY: { phase: '02', label: 'It is like...',   phaseColor: '#378ADD' },
+  RULE:    { phase: '03', label: 'Here is the rule',phaseColor: '#7F77DD' },
+  EXAMPLE: { phase: '04', label: 'See it in action',phaseColor: '#00e87a' },
+  BLANK:   { phase: '05', label: 'Fill the gap',    phaseColor: '#D4537E' },
+  EXPLAIN: { phase: '06', label: 'Explain it',      phaseColor: '#D4537E' },
+  RECALL:  { phase: '07', label: 'Can you remember?',phaseColor: '#EF9F27' },
 };
 
-// ── Main component ─────────────────────────────────────
-export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack }: Props) {
-  const router        = useRouter();
-  const [idx, setIdx] = useState(0);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [slideDir, setSlideDir]     = useState<'left' | 'right' | null>(null);
+export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, onComplete }: Props) {
+  const router = useRouter();
 
-  const card      = lesson.cards[idx];
-  const total     = lesson.cards.length;
-  const pct       = Math.round(((idx + 1) / total) * 100);
-  const isLast    = idx === total - 1;
-  const meta      = CARD_META[card.type];
+  const [idx, setIdx]             = useState(0);
+  const [sliding, setSliding]     = useState(false);
+  const [score, setScore]         = useState(0);
 
-  function goNext() {
-    if (isLast) return;
-    setSlideDir('left');
-    setShowAnswer(false);
-    setTimeout(() => { setIdx(i => i + 1); setSlideDir(null); }, 180);
+  // HOOK state
+  const [hookGuessed, setHookGuessed] = useState<string | null>(null);
+  const [hookRevealed, setHookRevealed] = useState(false);
+
+  // BLANK state
+  const [blankInput, setBlankInput]   = useState('');
+  const [blankChecked, setBlankChecked] = useState(false);
+  const [blankCorrect, setBlankCorrect] = useState(false);
+
+  // EXPLAIN state
+  const [explainText, setExplainText]     = useState('');
+  const [explainRevealed, setExplainRevealed] = useState(false);
+
+  // RECALL state
+  const [recallText, setRecallText]       = useState('');
+  const [recallRevealed, setRecallRevealed] = useState(false);
+
+  const card   = lesson.cards[idx];
+  const total  = lesson.cards.length;
+  const isLast = idx === total - 1;
+  const meta   = PHASE_META[card.type];
+
+  function advance() {
+    if (isLast || sliding) return;
+    setSliding(true);
+    setBlankInput(''); setBlankChecked(false); setBlankCorrect(false);
+    setExplainText(''); setExplainRevealed(false);
+    setHookGuessed(null); setHookRevealed(false);
+    setTimeout(() => { setIdx(i => i + 1); setSliding(false); }, 160);
   }
 
-  function goPrev() {
-    if (idx === 0) return;
-    setSlideDir('right');
-    setShowAnswer(false);
-    setTimeout(() => { setIdx(i => i - 1); setSlideDir(null); }, 180);
+  function goBack() {
+    if (idx === 0 || sliding) return;
+    setSliding(true);
+    setTimeout(() => { setIdx(i => i - 1); setSliding(false); }, 160);
+  }
+
+  function checkBlank() {
+    if (!card.answer || !blankInput.trim()) return;
+    const correct = blankInput.trim().toLowerCase() === card.answer.toLowerCase();
+    setBlankCorrect(correct);
+    setBlankChecked(true);
+    if (correct) setScore(s => s + 1);
+  }
+
+  // Can the student proceed to next card?
+  function canProceed(): boolean {
+    if (card.type === 'HOOK')    return hookGuessed !== null;
+    if (card.type === 'BLANK')   return blankChecked;
+    if (card.type === 'EXPLAIN') return explainText.trim().length > 10;
+    if (card.type === 'RECALL')  return recallRevealed;
+    return true;
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-      {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-        <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>
-            {lesson.topic}
-          </p>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-mono)' }}>
-            {idx + 1} / {total}
-          </p>
-        </div>
-        <div style={{ width: '60px' }} />
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <button onClick={onBack} style={GHOST_BTN}>Back</button>
+        <p style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+          {lesson.topic}
+        </p>
+        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)' }}>
+          {idx + 1}/{total}
+        </span>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', marginBottom: '1.25rem', overflow: 'hidden' }}>
-        <div style={{
-          height: '3px', borderRadius: '2px',
-          width: `${pct}%`, background: accentColor,
-          transition: 'width 0.3s ease',
-          boxShadow: `0 0 6px ${accentColor}80`,
-        }} />
+      {/* Phase progress */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '1.25rem' }}>
+        {lesson.cards.map((c, i) => {
+          const m = PHASE_META[c.type];
+          return (
+            <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', background: i <= idx ? m.phaseColor : 'rgba(255,255,255,0.1)', transition: 'background 0.3s' }} />
+          );
+        })}
       </div>
 
       {/* Card */}
       <div style={{
-        flex: 1, background: meta.bg,
-        borderRadius: '20px', padding: '1.75rem 1.5rem',
-        border: `1px solid ${accentColor}25`,
-        animation: slideDir === 'left' ? 'slideLeft 0.18s ease' : slideDir === 'right' ? 'slideRight 0.18s ease' : 'fadeIn 0.2s ease',
+        flex: 1, borderRadius: '22px', padding: '1.5rem',
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${meta.phaseColor}25`,
         display: 'flex', flexDirection: 'column',
-        minHeight: '340px',
-        position: 'relative', overflow: 'hidden',
+        opacity: sliding ? 0 : 1,
+        transform: sliding ? 'translateY(10px)' : 'translateY(0)',
+        transition: 'opacity 0.16s ease, transform 0.16s ease',
+        minHeight: '320px',
       }}>
-        {/* Card type badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1rem' }}>
-          <span style={{ fontSize: '18px' }}>{meta.emoji}</span>
-          <span style={{
-            fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em',
-            color: accentColor, textTransform: 'uppercase',
-          }}>
-            {meta.label}
+
+        {/* Phase badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.12em', color: meta.phaseColor, padding: '4px 10px', background: meta.phaseColor + '18', borderRadius: '99px', border: `1px solid ${meta.phaseColor}30` }}>
+            {meta.label.toUpperCase()}
           </span>
         </div>
 
-        {/* Title */}
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '1rem', lineHeight: 1.3 }}>
-          {card.title}
-        </h2>
-
-        {/* ── Card body by type ── */}
-
-        {/* EXPLAIN */}
-        {card.type === 'EXPLAIN' && (
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.75, marginBottom: card.highlight ? '1rem' : '0' }}>
-              {card.content}
+        {/* ── HOOK ── */}
+        {card.type === 'HOOK' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <p style={{ fontSize: '20px', fontWeight: 700, color: '#fff', lineHeight: 1.4, marginBottom: '1.5rem' }}>
+              {card.question}
             </p>
-            {card.highlight && (
-              <div style={{ marginTop: 'auto', padding: '10px 14px', background: `${accentColor}18`, borderRadius: '10px', border: `1px solid ${accentColor}30` }}>
-                <p style={{ fontSize: '13px', fontWeight: 600, color: accentColor }}>💡 {card.highlight}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* EXAMPLE */}
-        {card.type === 'EXAMPLE' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {card.content && (
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.65 }}>{card.content}</p>
-            )}
-            {card.steps && card.steps.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {card.steps.map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: accentColor, minWidth: '20px', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                      {i + 1}.
-                    </span>
-                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.55, fontFamily: step.includes('=') ? 'var(--font-mono)' : 'var(--font-ui)' }}>
-                      {step}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {card.annotation && (
-              <div style={{ marginTop: 'auto', padding: '10px 14px', background: `${accentColor}15`, borderRadius: '10px', border: `1px solid ${accentColor}25` }}>
-                <p style={{ fontSize: '13px', color: accentColor, lineHeight: 1.5 }}>📌 {card.annotation}</p>
-              </div>
-            )}
-            {card.highlight && !card.annotation && (
-              <div style={{ marginTop: 'auto', padding: '10px 14px', background: `${accentColor}15`, borderRadius: '10px', border: `1px solid ${accentColor}25` }}>
-                <p style={{ fontSize: '13px', fontWeight: 600, color: accentColor }}>💡 {card.highlight}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VISUAL */}
-        {card.type === 'VISUAL' && (
-          <div style={{ flex: 1 }}>
-            <pre style={{
-              fontSize: '13px', color: 'rgba(255,255,255,0.85)',
-              lineHeight: 1.7, whiteSpace: 'pre-wrap',
-              fontFamily: 'var(--font-mono)',
-              background: 'rgba(0,0,0,0.25)', borderRadius: '10px',
-              padding: '14px', border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              {card.content}
-            </pre>
-          </div>
-        )}
-
-        {/* MISTAKE */}
-        {card.type === 'MISTAKE' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {card.content && (
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5, marginBottom: '4px' }}>
-                {card.content}
-              </p>
-            )}
-            <div style={{ padding: '12px 14px', background: 'rgba(226,75,74,0.12)', borderRadius: '10px', border: '1px solid rgba(226,75,74,0.25)' }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: '#ff8080', marginBottom: '5px', letterSpacing: '0.06em' }}>✗ WRONG</p>
-              <p style={{ fontSize: '14px', color: 'rgba(255,200,200,0.85)', lineHeight: 1.55, fontFamily: card.wrong?.includes('=') ? 'var(--font-mono)' : 'inherit' }}>
-                {card.wrong}
-              </p>
-            </div>
-            <div style={{ padding: '12px 14px', background: 'rgba(0,232,122,0.1)', borderRadius: '10px', border: '1px solid rgba(0,232,122,0.25)' }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: '#00e87a', marginBottom: '5px', letterSpacing: '0.06em' }}>✓ CORRECT</p>
-              <p style={{ fontSize: '14px', color: 'rgba(200,255,230,0.85)', lineHeight: 1.55, fontFamily: card.right?.includes('=') ? 'var(--font-mono)' : 'inherit' }}>
-                {card.right}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* MEMORY */}
-        {card.type === 'MEMORY' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ fontSize: '16px', color: '#fff', lineHeight: 1.75, textAlign: 'center', fontWeight: 500 }}>
-                {card.content}
-              </p>
-            </div>
-            {card.highlight && (
-              <div style={{ padding: '12px 14px', background: `${accentColor}18`, borderRadius: '10px', border: `1px solid ${accentColor}30`, textAlign: 'center' }}>
-                <p style={{ fontSize: '14px', fontWeight: 700, color: accentColor, fontFamily: 'var(--font-mono)' }}>
-                  {card.highlight}
+            {!hookGuessed ? (
+              <>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', letterSpacing: '0.06em' }}>
+                  WHAT DO YOU THINK?
                 </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {card.guesses?.map((g, i) => (
+                    <button key={i} onClick={() => setHookGuessed(g)} style={{
+                      padding: '12px 16px', borderRadius: '12px', cursor: 'pointer',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'rgba(255,255,255,0.85)', fontSize: '14px',
+                      fontFamily: 'var(--font-ui)', textAlign: 'left',
+                      transition: 'all 0.15s',
+                    }}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : !hookRevealed ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'rgba(239,159,39,0.1)', border: '1px solid rgba(239,159,39,0.25)' }}>
+                  <p style={{ fontSize: '12px', color: '#EF9F27', marginBottom: '4px', fontWeight: 600 }}>YOUR GUESS</p>
+                  <p style={{ fontSize: '14px', color: '#fff' }}>{hookGuessed}</p>
+                </div>
+                <button onClick={() => setHookRevealed(true)} style={{ ...WHITE_BTN(accentColor), marginTop: 'auto' }}>
+                  See why &#8594;
+                </button>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* PRACTICE */}
-        {card.type === 'PRACTICE' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ padding: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.65 }}>
-                {card.content}
-              </p>
-            </div>
-
-            {!showAnswer ? (
-              <button
-                onClick={() => setShowAnswer(true)}
-                style={{ ...GHOST_BTN, width: '100%', padding: '11px', fontSize: '14px', textAlign: 'center' }}
-              >
-                Show model answer
-              </button>
             ) : (
-              <div style={{ animation: 'fadeIn 0.2s ease', padding: '14px', background: 'rgba(0,232,122,0.08)', borderRadius: '12px', border: '1px solid rgba(0,232,122,0.2)' }}>
-                <p style={{ fontSize: '11px', letterSpacing: '0.08em', color: '#00e87a', marginBottom: '6px', fontWeight: 600 }}>
-                  MODEL ANSWER
-                </p>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                  {card.answer}
+              <div style={{ padding: '14px 16px', borderRadius: '12px', background: 'rgba(239,159,39,0.1)', border: '1px solid rgba(239,159,39,0.3)', animation: 'fadeIn 0.2s ease' }}>
+                <p style={{ fontSize: '12px', color: '#EF9F27', marginBottom: '6px', fontWeight: 600, letterSpacing: '0.06em' }}>INTERESTING — keep reading to find out</p>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                  This is what the next cards will explain.
                 </p>
               </div>
             )}
           </div>
         )}
 
-        {/* SUMMARY */}
-        {card.type === 'SUMMARY' && (
+        {/* ── ANALOGY ── */}
+        {card.type === 'ANALOGY' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ padding: '18px', background: 'rgba(55,138,221,0.1)', borderRadius: '14px', border: '1px solid rgba(55,138,221,0.25)', flex: 1, display: 'flex', alignItems: 'center' }}>
+              <p style={{ fontSize: '20px', fontWeight: 700, color: '#fff', lineHeight: 1.5 }}>
+                {card.analogy}
+              </p>
+            </div>
+            {card.visual && (
+              <div style={{ padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <pre style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', margin: 0, whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+                  {card.visual}
+                </pre>
+              </div>
+            )}
+            {card.connection && (
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                {card.connection}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── RULE ── */}
+        {card.type === 'RULE' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem' }}>
+            <div style={{ padding: '24px 20px', background: meta.phaseColor + '12', borderRadius: '18px', border: `2px solid ${meta.phaseColor}35`, textAlign: 'center' }}>
+              <p style={{ fontSize: '19px', fontWeight: 800, color: '#fff', lineHeight: 1.5, letterSpacing: '-0.01em' }}>
+                {card.rule}
+              </p>
+            </div>
+            {card.formula && (
+              <div style={{ padding: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+                <p style={{ fontSize: '22px', fontWeight: 800, color: meta.phaseColor, fontFamily: 'var(--font-mono)' }}>
+                  {card.formula}
+                </p>
+              </div>
+            )}
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', letterSpacing: '0.08em' }}>
+              MEMORISE THIS
+            </p>
+          </div>
+        )}
+
+        {/* ── EXAMPLE ── */}
+        {card.type === 'EXAMPLE' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {card.bullets?.map((b, i) => (
-              <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ color: accentColor, fontSize: '14px', marginTop: '1px', flexShrink: 0 }}>✦</span>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.5 }}>{b}</p>
+            {card.scenario && (
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '4px', fontStyle: 'italic' }}>
+                {card.scenario}
+              </p>
+            )}
+            {card.steps?.slice(0, 3).map((step, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: '12px', alignItems: 'flex-start',
+                padding: '14px', background: 'rgba(0,0,0,0.25)', borderRadius: '12px',
+                border: `1px solid ${meta.phaseColor}20`,
+                animation: `fadeIn 0.2s ease ${i * 0.1}s both`,
+              }}>
+                <div style={{
+                  width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0,
+                  background: meta.phaseColor + '25', border: `1px solid ${meta.phaseColor}40`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: meta.phaseColor }}>{i + 1}</span>
+                </div>
+                <p style={{ fontSize: '14px', color: '#fff', lineHeight: 1.45, fontFamily: step.includes('=') ? 'var(--font-mono)' : 'inherit', marginTop: '2px' }}>
+                  {step}
+                </p>
               </div>
             ))}
           </div>
         )}
+
+        {/* ── BLANK ── */}
+        {card.type === 'BLANK' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>COMPLETE THE SENTENCE</p>
+            <div style={{ padding: '18px', background: 'rgba(0,0,0,0.3)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <p style={{ fontSize: '17px', fontWeight: 600, color: '#fff', lineHeight: 1.6 }}>
+                {card.sentence?.split('___').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <span style={{
+                        display: 'inline-block', minWidth: '80px', borderBottom: `2px solid ${meta.phaseColor}`,
+                        color: blankChecked ? (blankCorrect ? '#00e87a' : '#ff6060') : meta.phaseColor,
+                        fontFamily: 'var(--font-mono)', fontSize: '15px', textAlign: 'center', padding: '0 4px',
+                      }}>
+                        {blankChecked ? blankInput : ''}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </p>
+            </div>
+
+            {!blankChecked ? (
+              <>
+                {card.hint && (
+                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>
+                    Hint: think about {card.hint}
+                  </p>
+                )}
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Type your answer..."
+                  value={blankInput}
+                  onChange={e => setBlankInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && blankInput.trim() && checkBlank()}
+                  style={{
+                    padding: '12px 14px', background: 'rgba(255,255,255,0.07)',
+                    border: `1px solid ${meta.phaseColor}40`, borderRadius: '10px',
+                    color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '16px', outline: 'none',
+                    width: '100%',
+                  }}
+                />
+                <button onClick={checkBlank} disabled={!blankInput.trim()} style={{
+                  ...WHITE_BTN(meta.phaseColor),
+                  opacity: blankInput.trim() ? 1 : 0.4,
+                  cursor: blankInput.trim() ? 'pointer' : 'not-allowed',
+                }}>
+                  Check
+                </button>
+              </>
+            ) : (
+              <div style={{ animation: 'fadeIn 0.2s ease', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {blankCorrect ? (
+                  <div style={{ padding: '14px 16px', background: 'rgba(0,232,122,0.12)', borderRadius: '12px', border: '1px solid rgba(0,232,122,0.3)', textAlign: 'center' }}>
+                    <p style={{ fontSize: '22px', marginBottom: '4px' }}>🎉</p>
+                    <p style={{ fontSize: '16px', fontWeight: 700, color: '#00e87a' }}>Yes! That is right!</p>
+                  </div>
+                ) : (
+                  <div style={{ padding: '14px 16px', background: 'rgba(226,75,74,0.12)', borderRadius: '12px', border: '1px solid rgba(226,75,74,0.3)' }}>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Not quite — the answer is:</p>
+                    <p style={{ fontSize: '20px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>{card.answer}</p>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>That is okay — keep going!</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── EXPLAIN ── */}
+        {card.type === 'EXPLAIN' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '14px', background: 'rgba(0,0,0,0.25)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: '#fff', lineHeight: 1.5 }}>{card.prompt}</p>
+            </div>
+            {!explainRevealed ? (
+              <>
+                <textarea
+                  autoFocus
+                  placeholder="Write it in your own words — imagine you are explaining to a friend..."
+                  value={explainText}
+                  onChange={e => setExplainText(e.target.value)}
+                  rows={4}
+                  style={{
+                    padding: '12px', background: 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${meta.phaseColor}30`, borderRadius: '10px',
+                    color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '14px',
+                    outline: 'none', resize: 'none', lineHeight: 1.6, flex: 1,
+                  }}
+                />
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'right' }}>
+                  {explainText.trim().split(/\s+/).filter(Boolean).length} words — just a few sentences is fine!
+                </p>
+                {explainText.trim().length > 10 && (
+                  <button onClick={() => setExplainRevealed(true)} style={WHITE_BTN(meta.phaseColor)}>
+                    See model answer
+                  </button>
+                )}
+              </>
+            ) : (
+              <div style={{ padding: '14px', background: 'rgba(212,83,126,0.08)', borderRadius: '12px', border: '1px solid rgba(212,83,126,0.25)', animation: 'fadeIn 0.2s ease' }}>
+                <p style={{ fontSize: '10px', fontWeight: 800, color: meta.phaseColor, marginBottom: '8px', letterSpacing: '0.1em' }}>MODEL ANSWER</p>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.7 }}>{card.modelAnswer}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── RECALL ── */}
+        {card.type === 'RECALL' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>
+              SAME QUESTION AS THE START — CAN YOU ANSWER IT NOW?
+            </p>
+            <div style={{ padding: '18px', background: 'rgba(239,159,39,0.08)', borderRadius: '14px', border: '1px solid rgba(239,159,39,0.2)' }}>
+              <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+                {card.question}
+              </p>
+            </div>
+            {!recallRevealed ? (
+              <>
+                <textarea
+                  placeholder="Answer from memory..."
+                  value={recallText}
+                  onChange={e => setRecallText(e.target.value)}
+                  rows={3}
+                  style={{
+                    padding: '12px', background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(239,159,39,0.3)', borderRadius: '10px',
+                    color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '14px',
+                    outline: 'none', resize: 'none', lineHeight: 1.6,
+                  }}
+                />
+                <button onClick={() => setRecallRevealed(true)} style={WHITE_BTN('#EF9F27')}>
+                  Check answer
+                </button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', animation: 'fadeIn 0.2s ease' }}>
+                <div style={{ padding: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 800, color: '#EF9F27', marginBottom: '6px', letterSpacing: '0.1em' }}>FULL ANSWER</p>
+                  <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.7 }}>{card.answer}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* Navigation */}
+      {/* Nav buttons */}
       <div style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
-        <button
-          onClick={goPrev}
-          disabled={idx === 0}
-          style={{
-            ...GHOST_BTN, flex: 1,
-            opacity: idx === 0 ? 0.3 : 1,
-            cursor: idx === 0 ? 'not-allowed' : 'pointer',
-          }}
-        >
-          ← Prev
+        <button onClick={goBack} disabled={idx === 0} style={{
+          ...GHOST_BTN,
+          opacity: idx === 0 ? 0.2 : 1,
+          cursor: idx === 0 ? 'not-allowed' : 'pointer',
+          padding: '12px 18px',
+        }}>
+          &#8592;
         </button>
 
         {isLast ? (
-          <button
-            onClick={() => router.push(practiseRoute)}
-            style={{
-              flex: 2, padding: '12px', borderRadius: '10px',
-              background: accentColor, border: 'none',
-              color: '#03080a', fontSize: '14px', fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'var(--font-ui)',
-              boxShadow: `0 0 16px ${accentColor}50`,
-            }}
-          >
-            Now practise →
+          <button onClick={() => { onComplete?.(score, lesson.cards.length); router.push(practiseRoute); }} style={{
+            flex: 1, padding: '13px', borderRadius: '12px',
+            background: accentColor, border: 'none',
+            color: '#03080a', fontSize: '15px', fontWeight: 800,
+            cursor: 'pointer', fontFamily: 'var(--font-ui)',
+            boxShadow: `0 0 24px ${accentColor}40`,
+            opacity: canProceed() ? 1 : 0.4,
+          }}>
+            Practise now &#8594;
           </button>
         ) : (
-          <button
-            onClick={goNext}
-            style={{
-              flex: 2, padding: '12px', borderRadius: '10px',
-              background: accentColor, border: 'none',
-              color: '#03080a', fontSize: '14px', fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'var(--font-ui)',
-            }}
-          >
-            Next →
+          <button onClick={advance} disabled={!canProceed()} style={{
+            flex: 1, padding: '13px', borderRadius: '12px',
+            background: canProceed() ? meta.phaseColor : 'rgba(255,255,255,0.1)',
+            border: 'none',
+            color: canProceed() ? '#03080a' : 'rgba(255,255,255,0.3)',
+            fontSize: '15px', fontWeight: 800,
+            cursor: canProceed() ? 'pointer' : 'not-allowed',
+            fontFamily: 'var(--font-ui)',
+            transition: 'all 0.2s ease',
+          }}>
+            {canProceed() ? 'Next \u2192' : card.type === 'HOOK' ? 'Pick one first!' : card.type === 'BLANK' ? 'Check your answer!' : card.type === 'EXPLAIN' ? 'Write something first!' : 'Next \u2192'}
           </button>
         )}
       </div>
 
-      {/* Dot indicators */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginTop: '12px' }}>
-        {lesson.cards.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => { setShowAnswer(false); setIdx(i); }}
-            style={{
-              width: i === idx ? '20px' : '6px', height: '6px',
-              borderRadius: '3px', border: 'none', cursor: 'pointer',
-              background: i === idx ? accentColor : 'rgba(255,255,255,0.15)',
-              transition: 'all 0.2s ease',
-              padding: 0,
-            }}
-          />
-        ))}
-      </div>
-
       <style>{`
-        @keyframes fadeIn    { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes slideLeft { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(-20px)} }
-        @keyframes slideRight{ from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(20px)} }
-        @keyframes spin      { to{transform:rotate(360deg)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin   { to{transform:rotate(360deg)} }
       `}</style>
     </div>
   );
 }
 
+// ── Helpers ────────────────────────────────────────────
+function WHITE_BTN(color: string): React.CSSProperties {
+  return {
+    width: '100%', padding: '13px', borderRadius: '12px',
+    background: color, border: 'none',
+    color: '#03080a', fontSize: '15px', fontWeight: 800,
+    cursor: 'pointer', fontFamily: 'var(--font-ui)',
+  };
+}
+
 const GHOST_BTN: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: '10px', padding: '9px 14px',
-  color: 'rgba(255,255,255,0.65)', fontSize: '13px',
+  background: 'rgba(255,255,255,0.07)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: '10px', padding: '10px 14px',
+  color: 'rgba(255,255,255,0.6)', fontSize: '14px',
   cursor: 'pointer', fontFamily: 'var(--font-ui)',
 };

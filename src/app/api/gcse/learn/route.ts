@@ -5,226 +5,221 @@ async function getGroq() {
   return new Groq({ apiKey: process.env.GROQ_API_KEY });
 }
 
-// ── Subject-specific card generation prompts ──────────
+// ── Writing rules ──────────────────────────────────────
+const WRITING_RULES = `
+STRICT WRITING RULES — a 10-12 year old must understand every word:
+
+1. Max 12 words per sentence. Short. Clear. No exceptions.
+2. Plain English FIRST. Technical term SECOND — always in brackets or after a dash.
+   WRONG: "A quadratic equation is a polynomial of degree 2"
+   RIGHT: "Some equations have x times x in them — these are called quadratic equations"
+3. Never assume prior knowledge. If a concept needs another concept to understand it, explain the simpler one first.
+4. Analogies must come from: food, sport, games, school, animals, phones, YouTube, family. NOT adult life.
+5. Example numbers must be small and positive first. Negatives only after the positive version is shown.
+6. The BLANK answer must be a word a student could guess from context — not a technical term.
+7. The EXPLAIN prompt must be: "Explain to a friend/sibling" — never "describe the mechanism of"
+8. Tone: excited, encouraging, like a cool older sibling. Never like a textbook.
+`;
+
+// ── Topic-specific teaching notes ─────────────────────
+// These tell the AI exactly how to break down hard topics
+const TOPIC_NOTES: Record<string, string> = {
+
+  'quadratic equations': `
+TEACHING NOTES FOR QUADRATIC EQUATIONS:
+
+PREREQUISITE CHECK — before explaining quadratics, briefly remind them:
+- x means "a mystery number we are trying to find"
+- x² (x squared) means x times x — NOT x times 2
+
+HOOK: Use a ball being thrown — it makes a curve, not a straight line.
+Why does it curve? That is what quadratics describe.
+
+ANALOGY: Use the squaring idea with simple numbers.
+"If x is 3, then x² is 3×3=9. If x is 4, then x² is 4×4=16.
+It grows much faster than just x. That fast growth makes curves."
+
+RULE: Keep it to ONE idea — "a quadratic has x² in it and makes a U shape".
+Do NOT show ax²+bx+c=0 to a 10-year-old. It is overwhelming.
+
+EXAMPLE: Use the SIMPLEST possible quadratic — x² = 9.
+Step 1: x times x equals 9
+Step 2: What number times itself equals 9?
+Step 3: x = 3 (because 3×3=9) or x = -3 (because -3×-3=9 too)
+Do NOT use factorising (x²-5x+6=0) — that is a separate lesson.
+
+BLANK: "x² means x ___ x" (answer: times)
+
+EXPLAIN: "Your friend thinks x² means x+x. Show them why that is wrong with numbers."
+
+REMEMBER: Factorising, the quadratic formula, and completing the square are all SEPARATE lessons.
+This lesson only covers: what is x², what makes something quadratic, and the simplest solve.
+`,
+
+  'pythagoras theorem': `
+TEACHING NOTES FOR PYTHAGORAS:
+
+HOOK: "A 3m ladder leans against a wall. The bottom is 2m from the wall.
+How high up the wall does it reach? You can work this out without measuring."
+
+ANALOGY: Use a square drawn on each side of a right-angle triangle.
+"The big square's area equals the two smaller squares added together."
+Draw this as ASCII art — it is much clearer than words.
+
+RULE: "In a right-angle triangle: a² + b² = c²
+The longest side (c) is always opposite the right angle corner."
+
+EXAMPLE: A 3-4-5 triangle. Use it because 9+16=25 is easy to check.
+Step 1: 3² = 9, 4² = 16
+Step 2: 9 + 16 = 25
+Step 3: c = √25 = 5 ✓
+
+BLANK: "The longest side is always opposite the ___ angle" (answer: right)
+
+EXPLAIN: "Your friend says you need a ruler to find the missing side. Are they right?"
+`,
+
+  'trigonometry (soh cah toa)': `
+TEACHING NOTES FOR TRIGONOMETRY:
+
+HOOK: "A ramp goes up at an angle. You know how long the ramp is and the angle.
+Can you work out how high it goes without measuring?"
+
+ANALOGY: SOH CAH TOA is just three recipes. Each recipe uses two sides and an angle.
+Like a recipe card — pick the right recipe for what you know and what you want to find.
+
+RULE: Introduce the three sides FIRST with a clear picture:
+- Hypotenuse = longest side, always opposite the right angle
+- Opposite = side opposite the angle you are using
+- Adjacent = side next to the angle you are using
+Then: sin = O/H, cos = A/H, tan = O/A
+
+EXAMPLE: Simple 30-60-90 triangle with hypotenuse = 10.
+Find the opposite side using sin30 = 0.5.
+Opposite = 10 × 0.5 = 5.
+
+BLANK: "The side opposite the right angle is called the ___" (answer: hypotenuse)
+`,
+
+  'percentages': `
+TEACHING NOTES FOR PERCENTAGES:
+
+HOOK: "A game says you have 80% health. Another game says you have 40 out of 50 health.
+Which one is doing better?"
+
+ANALOGY: Per cent means "out of 100". Like a pie cut into 100 slices.
+50% = 50 slices = half the pie.
+
+RULE: To find a percentage of something: divide by 100, then multiply.
+"Find 30% of 200: 200 ÷ 100 = 2, then 2 × 30 = 60"
+
+EXAMPLE: Build up from simple to applied.
+Step 1: 50% of 80 = 40 (half)
+Step 2: 10% of 80 = 8 (divide by 10)
+Step 3: 30% of 80 = 24 (three lots of 10%)
+`,
+
+  'probability basics': `
+TEACHING NOTES FOR PROBABILITY:
+
+HOOK: "You flip a coin 10 times. You get heads 8 times. Was that fair?"
+
+ANALOGY: Probability is just a fraction. How many ways can this happen?
+Out of how many things could happen total?
+
+RULE: Probability = number of ways it can happen ÷ total outcomes
+Always between 0 (impossible) and 1 (certain).
+
+EXAMPLE: Rolling a dice.
+P(getting a 3) = 1/6 — only one 3, six possible outcomes.
+P(getting an even number) = 3/6 = 1/2 — three even numbers (2,4,6).
+`,
+};
+
+function getTopicNotes(topic: string): string {
+  const key = topic.toLowerCase();
+  for (const [k, v] of Object.entries(TOPIC_NOTES)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return '';
+}
 
 function buildPrompt(subject: string, topic: string): string {
-  const subjectInstructions: Record<string, string> = {
-    maths: `You are an expert GCSE Maths teacher creating lesson cards for: "${topic}"
+  const topicNotes = getTopicNotes(topic);
 
-Generate 7 lesson cards that teach this topic from scratch, step by step.
-The student knows nothing about this topic yet.
+  return `You are a brilliant teacher explaining "${topic}" (${subject}) to a 10-12 year old student who has never seen this topic.
+${WRITING_RULES}
+${topicNotes ? `\n${topicNotes}\n` : ''}
 
-Card types to use:
-- EXPLAIN: Clear definition in simple language. No jargon without explanation.
-- EXAMPLE: A fully worked example showing EVERY step. Use → between steps.
-- VISUAL: A structured layout showing a pattern, formula breakdown, or diagram using text/ASCII.
-- MISTAKE: One common error students make, then the correct approach side by side.
-- MEMORY: A mnemonic, trick, or shortcut to remember the method.
-- PRACTICE: ONE question for the student to try. Include the answer in "answer" field.
-- SUMMARY: 3-4 bullet points recapping the key things to remember.
+Generate exactly 7 lesson cards: HOOK → ANALOGY → RULE → EXAMPLE → BLANK → EXPLAIN → RECALL
 
-Return ONLY valid JSON:
-{
-  "topic": "${topic}",
-  "subject": "maths",
-  "cards": [
-    {
-      "type": "EXPLAIN",
-      "title": "What is ${topic}?",
-      "content": "Clear explanation in plain English. 2-4 sentences max.",
-      "highlight": null
-    },
-    {
-      "type": "EXAMPLE",
-      "title": "Worked example",
-      "content": "Problem statement here",
-      "steps": ["Step 1: ...", "Step 2: ...", "Step 3: Answer = ..."],
-      "highlight": "Key insight from this example"
-    },
-    {
-      "type": "VISUAL",
-      "title": "The pattern",
-      "content": "ASCII diagram or structured text layout",
-      "highlight": null
-    },
-    {
-      "type": "MISTAKE",
-      "title": "Common mistake",
-      "wrong": "What students do wrong",
-      "right": "What they should do instead",
-      "content": "Why this mistake happens",
-      "highlight": null
-    },
-    {
-      "type": "MEMORY",
-      "title": "Remember this",
-      "content": "Mnemonic, trick, or shortcut",
-      "highlight": "The key rule in one sentence"
-    },
-    {
-      "type": "PRACTICE",
-      "title": "Your turn",
-      "content": "Question text here",
-      "answer": "Full worked answer",
-      "highlight": null
-    },
-    {
-      "type": "SUMMARY",
-      "title": "Key points",
-      "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"],
-      "content": null,
-      "highlight": null
-    }
-  ]
-}`,
-
-    science: `You are an expert AQA GCSE Science teacher creating lesson cards for: "${topic}"
-
-Generate 7 lesson cards that teach this topic from scratch.
-The student has not studied this topic yet.
-
-Card types to use:
-- EXPLAIN: What is it? Simple definition with real-world connection.
-- EXAMPLE: A concrete example, experiment, or case study that illustrates the concept.
-- VISUAL: A structured text diagram (e.g. food chain, equation breakdown, cell diagram in ASCII).
-- MISTAKE: One common misconception students have, then the correct understanding.
-- MEMORY: A mnemonic or memorable phrase for key facts/equations.
-- PRACTICE: ONE exam-style question with model answer.
-- SUMMARY: Key facts to remember — include any equations, definitions, or required facts.
+HOOK: One surprising question. 3 natural wrong guesses. No answer yet. Max 15 words.
+ANALOGY: Everyday comparison from a child's world. One sentence + optional ASCII visual.
+RULE: Plain English version (1 sentence) then technical name. Max 20 words total.
+EXAMPLE: One concrete example, 3 steps, max 10 words each. Use small positive numbers first.
+BLANK: One sentence, one simple guessable word blanked with ___. Not a technical term.
+EXPLAIN: Ask them to explain to a friend/sibling. Give a fun real scenario.
+RECALL: Same question as HOOK. Full plain-English answer at the end.
 
 Return ONLY valid JSON:
 {
   "topic": "${topic}",
-  "subject": "science",
+  "subject": "${subject}",
   "cards": [
     {
-      "type": "EXPLAIN",
-      "title": "What is ${topic}?",
-      "content": "Clear explanation with real-world context. 2-4 sentences.",
-      "highlight": "The one sentence definition to memorise"
+      "type": "HOOK",
+      "question": "Why does a thrown ball make a curve shape instead of going in a straight line?",
+      "guesses": [
+        "Because the wind pushes it sideways",
+        "Because gravity pulls it down as it moves",
+        "Because the ball spins around"
+      ]
+    },
+    {
+      "type": "ANALOGY",
+      "analogy": "It is like counting tiles in a square — 3 tiles wide and 3 tiles tall means 9 tiles total, not 6",
+      "connection": "x squared means x groups of x — it grows much faster than just adding x",
+      "visual": "  x = 3\\n  x² = 3 × 3 = 9\\n  (NOT 3 + 3 = 6)"
+    },
+    {
+      "type": "RULE",
+      "rule": "Some equations have x times x in them. That makes them curve when you draw them.",
+      "formula": "These are called quadratic equations"
     },
     {
       "type": "EXAMPLE",
-      "title": "Example",
-      "content": "Concrete example or case study",
-      "highlight": "Key point from this example"
+      "scenario": "Find x when x² = 9",
+      "steps": [
+        "x times x equals 9",
+        "What number times itself makes 9?",
+        "x = 3 because 3 × 3 = 9"
+      ]
     },
     {
-      "type": "VISUAL",
-      "title": "Diagram / Structure",
-      "content": "ASCII diagram, flow chart, or structured layout",
-      "highlight": null
+      "type": "BLANK",
+      "sentence": "x² means x ___ x",
+      "answer": "times",
+      "hint": "What maths operation does squared mean?"
     },
-    {
-      "type": "MISTAKE",
-      "title": "Common misconception",
-      "wrong": "What students incorrectly believe",
-      "right": "The correct understanding",
-      "content": "Why this confusion happens",
-      "highlight": null
-    },
-    {
-      "type": "MEMORY",
-      "title": "Remember this",
-      "content": "Mnemonic or memorable phrase",
-      "highlight": "Any equation or key fact to memorise"
-    },
-    {
-      "type": "PRACTICE",
-      "title": "Exam question",
-      "content": "Question text [X marks]",
-      "answer": "Model answer with marking points",
-      "highlight": null
-    },
-    {
-      "type": "SUMMARY",
-      "title": "Key facts",
-      "bullets": ["Fact 1", "Fact 2", "Fact 3", "Fact 4"],
-      "content": null,
-      "highlight": null
-    }
-  ]
-}`,
-
-    english: `You are an expert AQA GCSE English Language teacher creating lesson cards for: "${topic}"
-
-Generate 7 lesson cards that teach this skill or technique from scratch.
-The student is unfamiliar with this topic.
-
-Card types to use:
-- EXPLAIN: What is the technique/skill? Plain English definition.
-- EXAMPLE: An annotated text extract showing the technique in action. Label what the writer does and why.
-- VISUAL: A structured template, framework, or annotated response structure.
-- MISTAKE: A weak student response vs a strong student response (same question, different quality).
-- MEMORY: A memorable acronym, structure, or phrase (e.g. PETER, AFOREST, DAFOREST).
-- PRACTICE: ONE exam-style question with a model answer.
-- SUMMARY: What to always do, what to never do, and the one-line formula.
-
-Return ONLY valid JSON:
-{
-  "topic": "${topic}",
-  "subject": "english",
-  "cards": [
     {
       "type": "EXPLAIN",
-      "title": "What is ${topic}?",
-      "content": "Clear definition. Why do writers use this? What effect does it have?",
-      "highlight": "One-sentence definition to memorise"
+      "prompt": "Your friend thinks x² and x+x are the same thing. Show them why they are wrong using the number 4.",
+      "modelAnswer": "x² means x times x. So if x is 4, then x² is 4 times 4 which is 16. But x+x with 4 is just 4+4 which is 8. They are very different!"
     },
     {
-      "type": "EXAMPLE",
-      "title": "Annotated example",
-      "content": "A short text extract with the technique highlighted",
-      "annotation": "Explanation of what the writer does and the effect on the reader",
-      "highlight": null
-    },
-    {
-      "type": "VISUAL",
-      "title": "Response framework",
-      "content": "Structured template or framework showing how to write about this technique",
-      "highlight": null
-    },
-    {
-      "type": "MISTAKE",
-      "title": "Weak vs strong response",
-      "wrong": "Example of a weak student response (surface-level, vague)",
-      "right": "Example of a strong student response (specific, analytical)",
-      "content": "What makes the difference",
-      "highlight": null
-    },
-    {
-      "type": "MEMORY",
-      "title": "Remember this",
-      "content": "Acronym, structure, or memorable phrase",
-      "highlight": "The formula for a top-mark response"
-    },
-    {
-      "type": "PRACTICE",
-      "title": "Your turn",
-      "content": "Question: [short extract] How does the writer use language here?",
-      "answer": "Model answer demonstrating full technique",
-      "highlight": null
-    },
-    {
-      "type": "SUMMARY",
-      "title": "Key rules",
-      "bullets": ["Always do: ...", "Never do: ...", "Key phrase: ...", "Top tip: ..."],
-      "content": null,
-      "highlight": null
+      "type": "RECALL",
+      "question": "Why does a thrown ball make a curve shape instead of going in a straight line?",
+      "answer": "Gravity pulls the ball down while it moves forward. This makes it follow a curved path — a U shape. Maths can describe this curved path using a quadratic equation, which has x times x in it."
     }
   ]
-}`,
-  };
+}
 
-  return subjectInstructions[subject] ?? subjectInstructions.science;
+FINAL CHECK before returning: Read every sentence. Could a 10-year-old read it out loud and understand it immediately? If not — simplify it.`;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { subject, topic } = await req.json() as {
-      subject: string;
-      topic:   string;
-    };
+    const { subject, topic } = await req.json() as { subject: string; topic: string };
 
     if (!subject || !topic) {
       return NextResponse.json({ error: 'Missing subject or topic' }, { status: 400 });
@@ -233,7 +228,7 @@ export async function POST(req: NextRequest) {
     const client = await getGroq();
     const completion = await client.chat.completions.create({
       model:     'llama-3.3-70b-versatile',
-      max_tokens: 2500,
+      max_tokens: 2000,
       response_format: { type: 'json_object' },
       messages: [{ role: 'user', content: buildPrompt(subject, topic) }],
     });
