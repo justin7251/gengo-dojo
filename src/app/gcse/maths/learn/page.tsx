@@ -1,137 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { onAuth } from '@/lib/auth';
+import { getPublishedLessons, getLessonProgress, saveLessonProgress, GCSELesson, LessonProgress } from '@/lib/gcse-lessons';
+import { LessonCardSwiper } from '@/components/GCSELessonCard';
 import AuthGuard from '@/components/AuthGuard';
-import { LessonCardSwiper, Lesson } from '@/components/GCSELessonCard';
 
 export default function GCSEMathsLearnPage() {
   return <AuthGuard><MathsLearn /></AuthGuard>;
 }
 
-const TOPICS = [
-  { section: 'Algebra',             items: ['Linear equations', 'Simultaneous equations', 'Quadratic equations', 'Sequences & nth term', 'Inequalities', 'Functions & graphs', 'Factorising expressions', 'Rearranging formulae'] },
-  { section: 'Geometry & Measures', items: ['Pythagoras theorem', 'Trigonometry (SOH CAH TOA)', 'Circle theorems', 'Vectors', 'Area & volume', 'Angles & parallel lines', 'Transformations', 'Congruence & similarity'] },
-  { section: 'Statistics',          items: ['Mean, median, mode & range', 'Probability basics', 'Tree diagrams', 'Cumulative frequency', 'Box plots', 'Histograms', 'Scatter graphs & correlation', 'Venn diagrams'] },
-  { section: 'Number',              items: ['Fractions & decimals', 'Percentages', 'Ratio & proportion', 'Standard form', 'Surds', 'Indices & powers', 'Bounds & accuracy', 'Prime factors, HCF & LCM'] },
-];
-
 const ACCENT = '#378ADD';
 
-type Phase = 'pick' | 'loading' | 'lesson';
+function getSectionForTopic(topic: string): string {
+  const t = topic.toLowerCase();
+  if (['linear', 'simultaneous', 'quadratic', 'sequence', 'inequalit', 'function', 'factoris', 'rearrang'].some(k => t.includes(k))) return 'Algebra';
+  if (['pythagoras', 'trigonometry', 'circle', 'vector', 'area', 'volume', 'angle', 'transform', 'congruence'].some(k => t.includes(k))) return 'Geometry';
+  if (['probability', 'average', 'mean', 'median', 'cumulative', 'box plot', 'histogram', 'scatter', 'venn'].some(k => t.includes(k))) return 'Statistics';
+  return 'Number';
+}
 
 function MathsLearn() {
-  const router  = useRouter();
-  const [phase, setPhase]   = useState<Phase>('pick');
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [error, setError]   = useState('');
-  const [activeTopic, setActiveTopic] = useState('');
+  const router = useRouter();
+  const [uid, setUid]           = useState('');
+  const [lessons, setLessons]   = useState<GCSELesson[]>([]);
+  const [progress, setProgress] = useState<Record<string, LessonProgress>>({});
+  const [active, setActive]     = useState<GCSELesson | null>(null);
+  const [loading, setLoading]   = useState(true);
 
-  async function loadLesson(topic: string) {
-    setActiveTopic(topic);
-    setPhase('loading');
-    setError('');
-    try {
-      const res  = await fetch('/api/gcse/learn', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subject: 'maths', topic }),
-      });
-      const data = await res.json();
-      if (!data.cards?.length) throw new Error();
-      setLesson(data);
-      setPhase('lesson');
-    } catch {
-      setError('Failed to load lesson. Try again.');
-      setPhase('pick');
-    }
+  useEffect(() => {
+    return onAuth(async user => {
+      if (!user) return;
+      setUid(user.uid);
+      const [ls, prog] = await Promise.all([
+        getPublishedLessons('maths'),
+        getLessonProgress(user.uid),
+      ]);
+      setLessons(ls);
+      setProgress(prog);
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleComplete(score: number, total: number) {
+    if (!active || !uid) return;
+    await saveLessonProgress(uid, active.id, score, total);
+    setProgress(prev => ({ ...prev, [active.id]: { lessonId: active.id, completed: true, completedAt: null, score, totalCards: total } }));
   }
 
-  // ── Loading ──────────────────────────────────────────
-  if (phase === 'loading') return (
-    <Screen>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <Spinner />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>
-          Building your lesson…
-        </p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{activeTopic}</p>
-      </div>
+  if (loading) return <Screen accent={ACCENT}><div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner color={ACCENT} /></div></Screen>;
+
+  if (active) return (
+    <Screen accent={ACCENT}>
+      <LessonCardSwiper lesson={active} accentColor={ACCENT} practiseRoute="/gcse/maths/algebra" onBack={() => setActive(null)} onComplete={handleComplete} />
     </Screen>
   );
 
-  // ── Lesson ───────────────────────────────────────────
-  if (phase === 'lesson' && lesson) return (
-    <Screen>
-      <LessonCardSwiper
-        lesson={lesson}
-        accentColor={ACCENT}
-        practiseRoute="/gcse/maths/algebra"
-        onBack={() => { setPhase('pick'); setLesson(null); }}
-      />
-    </Screen>
-  );
+  const sections: Record<string, GCSELesson[]> = {};
+  lessons.forEach(l => {
+    const s = getSectionForTopic(l.topic);
+    if (!sections[s]) sections[s] = [];
+    sections[s].push(l);
+  });
 
-  // ── Topic picker ─────────────────────────────────────
+  const completed = Object.values(progress).filter(p => p.completed).length;
+
   return (
-    <Screen>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/gcse/maths')} style={GHOST_BTN}>← Back</button>
-        <div>
-          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)' }}>MATHS · LEARN</p>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', lineHeight: 1 }}>Choose a topic</h1>
-        </div>
-      </div>
-
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-        Each lesson has 7 cards — explanation, worked example, visual, common mistake, memory trick, practice question, and summary. Then go straight into exam practice.
-      </p>
-
-      {error && (
-        <p style={{ fontSize: '13px', color: '#ff8080', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(226,75,74,0.1)', borderRadius: '8px' }}>
-          {error}
-        </p>
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {TOPICS.map(group => (
-          <div key={group.section}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: `${ACCENT}aa`, fontWeight: 600, marginBottom: '8px' }}>
-              {group.section.toUpperCase()}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {group.items.map(topic => (
-                <button
-                  key={topic}
-                  onClick={() => loadLesson(topic)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', borderRadius: '10px', cursor: 'pointer',
-                    border: `1px solid rgba(55,138,221,0.2)`, background: 'rgba(55,138,221,0.06)',
-                    fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{topic}</span>
-                  <span style={{ fontSize: '18px', color: `${ACCENT}80` }}>›</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+    <Screen accent={ACCENT}>
+      <LessonListHeader title="Maths" accent={ACCENT} onBack={() => router.push('/gcse/maths')} completed={completed} total={lessons.length} />
+      <LessonList sections={sections} progress={progress} accent={ACCENT} onSelect={setActive} empty="Maths lessons are being created. Check back soon." />
     </Screen>
   );
 }
-
-function Screen({ children }: { children: React.ReactNode }) {
-  return (
-    <main style={{ minHeight: '100vh', background: '#050a18', backgroundImage: 'radial-gradient(ellipse at top, #0a1535 0%, #050a18 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(55,138,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
-    </main>
-  );
-}
-
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '32px', height: '32px', border: '2px solid rgba(55,138,221,0.2)', borderTopColor: '#378ADD', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
