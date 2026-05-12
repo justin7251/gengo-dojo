@@ -13,6 +13,7 @@ export interface GCSELesson {
   topic:       string;
   topicSlug:   string;
   cards:       LessonCard[];
+  quickCheck?: unknown[];
   published:   boolean;
   createdAt:   Timestamp | null;
   updatedAt:   Timestamp | null;
