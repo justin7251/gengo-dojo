@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { QuickCheck, QuickCheckQuestion } from '@/components/GCSEQuickCheck';
 
 // ── Card types ─────────────────────────────────────────
 export type CardType = 'HOOK' | 'ANALOGY' | 'RULE' | 'EXAMPLE' | 'BLANK' | 'EXPLAIN' | 'RECALL';
@@ -32,9 +33,10 @@ export interface LessonCard {
 }
 
 export interface Lesson {
-  topic:   string;
-  subject: string;
-  cards:   LessonCard[];
+  topic:       string;
+  subject:     string;
+  cards:       LessonCard[];
+  quickCheck?: import('@/components/GCSEQuickCheck').QuickCheckQuestion[];
 }
 
 interface Props {
@@ -43,6 +45,7 @@ interface Props {
   accentColor:   string;
   onBack:        () => void;
   onComplete?:   (score: number, total: number) => void;
+  quickCheck?:   QuickCheckQuestion[];
 }
 
 // Phase labels and colours
@@ -56,12 +59,13 @@ const PHASE_META: Record<CardType, { phase: string; label: string; phaseColor: s
   RECALL:  { phase: '07', label: 'Can you remember?',phaseColor: '#EF9F27' },
 };
 
-export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, onComplete }: Props) {
+export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, onComplete, quickCheck }: Props) {
   const router = useRouter();
 
-  const [idx, setIdx]             = useState(0);
-  const [sliding, setSliding]     = useState(false);
-  const [score, setScore]         = useState(0);
+  const [idx, setIdx]                 = useState(0);
+  const [sliding, setSliding]         = useState(false);
+  const [score, setScore]             = useState(0);
+  const [phase, setPhase]             = useState<'lesson' | 'quickcheck'>('lesson');
 
   // HOOK state
   const [hookGuessed, setHookGuessed] = useState<string | null>(null);
@@ -115,6 +119,26 @@ export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, o
     if (card.type === 'EXPLAIN') return explainText.trim().length > 10;
     if (card.type === 'RECALL')  return recallRevealed;
     return true;
+  }
+
+  // ── Quick check phase ────────────────────────────────
+  if (phase === 'quickcheck' && quickCheck?.length) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <button onClick={() => setPhase('lesson')} style={GHOST_BTN}>Back to lesson</button>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{lesson.topic}</p>
+          <div style={{ width: '60px' }} />
+        </div>
+        <QuickCheck
+          questions={quickCheck}
+          topic={lesson.topic}
+          accentColor={accentColor}
+          practiseRoute={practiseRoute}
+          onReplay={(fromCard) => { setIdx(fromCard); setPhase('lesson'); setBlankInput(''); setBlankChecked(false); setBlankCorrect(false); setExplainText(''); setExplainRevealed(false); setHookGuessed(null); setHookRevealed(false); setRecallText(''); setRecallRevealed(false); }}
+        />
+      </div>
+    );
   }
 
   return (
@@ -445,15 +469,28 @@ export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, o
         </button>
 
         {isLast ? (
-          <button onClick={() => { onComplete?.(score, lesson.cards.length); router.push(practiseRoute); }} style={{
-            flex: 1, padding: '13px', borderRadius: '12px',
-            background: accentColor, border: 'none',
-            color: '#03080a', fontSize: '15px', fontWeight: 800,
-            cursor: 'pointer', fontFamily: 'var(--font-ui)',
-            boxShadow: `0 0 24px ${accentColor}40`,
-            opacity: canProceed() ? 1 : 0.4,
-          }}>
-            Practise now &#8594;
+          <button
+            onClick={() => {
+              onComplete?.(score, lesson.cards.length);
+              if (quickCheck?.length) {
+                setPhase('quickcheck');
+              } else {
+                router.push(practiseRoute);
+              }
+            }}
+            disabled={!canProceed()}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              background: canProceed() ? accentColor : 'rgba(255,255,255,0.1)',
+              border: 'none',
+              color: canProceed() ? '#03080a' : 'rgba(255,255,255,0.3)',
+              fontSize: '15px', fontWeight: 800,
+              cursor: canProceed() ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-ui)',
+              boxShadow: canProceed() ? `0 0 24px ${accentColor}40` : 'none',
+              transition: 'all 0.2s ease',
+            }}>
+            {quickCheck?.length ? 'Quick check \u2192' : 'Practise now \u2192'}
           </button>
         ) : (
           <button onClick={advance} disabled={!canProceed()} style={{

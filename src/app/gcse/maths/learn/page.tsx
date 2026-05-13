@@ -53,7 +53,7 @@ function MathsLearn() {
 
   if (active) return (
     <Screen accent={ACCENT}>
-      <LessonCardSwiper lesson={active} accentColor={ACCENT} practiseRoute="/gcse/maths/algebra" onBack={() => setActive(null)} onComplete={handleComplete} />
+      <LessonCardSwiper lesson={active} accentColor={ACCENT} practiseRoute="/gcse/maths/algebra" onBack={() => setActive(null)} onComplete={handleComplete} quickCheck={active.quickCheck} />
     </Screen>
   );
 
