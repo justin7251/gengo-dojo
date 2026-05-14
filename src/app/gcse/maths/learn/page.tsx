@@ -6,6 +6,8 @@ import { onAuth } from '@/lib/auth';
 import { getPublishedLessons, getLessonProgress, saveLessonProgress, GCSELesson, LessonProgress } from '@/lib/gcse-lessons';
 import { LessonCardSwiper } from '@/components/GCSELessonCard';
 import AuthGuard from '@/components/AuthGuard';
+import { Spinner } from '@/components/Spinner';
+import { Screen } from '@/components/Screen';
 
 export default function GCSEMathsLearnPage() {
   return <AuthGuard><MathsLearn /></AuthGuard>;
