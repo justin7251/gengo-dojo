@@ -20,6 +20,7 @@ import { getAgentProfile, createAgentProfile } from '@/lib/agent';
 import { AgentProfile } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 import NotificationSettings from '@/components/NotificationSettings';
+import { TodayPlanCard } from '@/components/TodayPlanCard';
 
 const INTERESTS = [
   'Judo','Anime','Cooking','Gaming','Music','Travel','Fashion',
@@ -576,7 +577,13 @@ function Dashboard() {
             </div>
           </div>
         )}
-
+        {/* <TodayPlanCard
+          uid={uid}
+          selectedSubjects={profile.selectedSubjects ?? ['maths']}
+          weakTopics={profile.weakTopics ?? []}
+          targetLang={profile.targetLang}
+          nativeLang={profile.nativeLang}
+        /> */}
       </div>
 
       <style>{`
