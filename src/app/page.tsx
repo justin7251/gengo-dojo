@@ -43,6 +43,7 @@ export default function OnboardingPage() {
         setUid(user.uid);
         setEmail(user.email ?? '');
         setStep('lang');
+        router.push('/onboarding');
       }
     });
   }, [router]);
