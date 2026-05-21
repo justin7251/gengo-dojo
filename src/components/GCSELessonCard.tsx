@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuickCheck, QuickCheckQuestion } from '@/components/GCSEQuickCheck';
+import { useStuck, StuckHint, StuckReveal, AttemptDots } from '@/components/StuckDetection';
 
 // ── Card types ─────────────────────────────────────────
 export type CardType = 'HOOK' | 'ANALOGY' | 'RULE' | 'EXAMPLE' | 'BLANK' | 'EXPLAIN' | 'RECALL';
@@ -72,9 +73,10 @@ export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, o
   const [hookRevealed, setHookRevealed] = useState(false);
 
   // BLANK state
-  const [blankInput, setBlankInput]   = useState('');
-  const [blankChecked, setBlankChecked] = useState(false);
-  const [blankCorrect, setBlankCorrect] = useState(false);
+  const [blankInput, setBlankInput]       = useState('');
+  const [blankChecked, setBlankChecked]   = useState(false);
+  const [blankCorrect, setBlankCorrect]   = useState(false);
+  const stuck = useStuck({ hintAfter: 2, revealAfter: 3 });
 
   // EXPLAIN state
   const [explainText, setExplainText]     = useState('');
@@ -109,7 +111,17 @@ export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, o
     const correct = blankInput.trim().toLowerCase() === card.answer.toLowerCase();
     setBlankCorrect(correct);
     setBlankChecked(true);
-    if (correct) setScore(s => s + 1);
+    if (correct) {
+      setScore(s => s + 1);
+      stuck.reset();
+    } else {
+      stuck.recordWrong();
+      // Allow retry — don't lock them out
+      setTimeout(() => {
+        setBlankChecked(false);
+        setBlankInput('');
+      }, 1800);
+    }
   }
 
   // Can the student proceed to next card?
@@ -330,45 +342,71 @@ export function LessonCardSwiper({ lesson, practiseRoute, accentColor, onBack, o
 
             {!blankChecked ? (
               <>
-                {card.hint && (
+                {/* Attempt dots */}
+                {stuck.attempts > 0 && (
+                  <AttemptDots attempts={stuck.attempts} max={3} accentColor={meta.phaseColor} />
+                )}
+
+                {/* Regular hint */}
+                {card.hint && stuck.attempts === 0 && (
                   <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>
                     Hint: think about {card.hint}
                   </p>
                 )}
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="Type your answer..."
-                  value={blankInput}
-                  onChange={e => setBlankInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && blankInput.trim() && checkBlank()}
-                  style={{
-                    padding: '12px 14px', background: 'rgba(255,255,255,0.07)',
-                    border: `1px solid ${meta.phaseColor}40`, borderRadius: '10px',
-                    color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '16px', outline: 'none',
-                    width: '100%',
-                  }}
+
+                {/* Stuck hint — shows after 2 wrong */}
+                <StuckHint
+                  hint={`The answer is related to: ${card.hint ?? 'the main rule from this lesson'}`}
+                  analogy={card.sentence?.replace('___', `[${card.answer}]`)}
+                  show={stuck.showHint}
+                  accentColor={meta.phaseColor}
                 />
-                <button onClick={checkBlank} disabled={!blankInput.trim()} style={{
-                  ...WHITE_BTN(meta.phaseColor),
-                  opacity: blankInput.trim() ? 1 : 0.4,
-                  cursor: blankInput.trim() ? 'pointer' : 'not-allowed',
-                }}>
-                  Check
-                </button>
+
+                {/* Auto-reveal after 3 wrong */}
+                <StuckReveal
+                  answer={card.answer ?? ''}
+                  explanation="Take a look and try to remember it for next time."
+                  show={stuck.showAnswer}
+                  accentColor={meta.phaseColor}
+                />
+
+                {!stuck.showAnswer && (
+                  <>
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Type your answer..."
+                      value={blankInput}
+                      onChange={e => setBlankInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && blankInput.trim() && checkBlank()}
+                      style={{
+                        padding: '12px 14px', background: 'rgba(255,255,255,0.07)',
+                        border: `1px solid ${meta.phaseColor}40`, borderRadius: '10px',
+                        color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '16px', outline: 'none',
+                        width: '100%',
+                      }}
+                    />
+                    <button onClick={checkBlank} disabled={!blankInput.trim()} style={{
+                      ...WHITE_BTN(meta.phaseColor),
+                      opacity: blankInput.trim() ? 1 : 0.4,
+                      cursor: blankInput.trim() ? 'pointer' : 'not-allowed',
+                    }}>
+                      Check
+                    </button>
+                  </>
+                )}
               </>
             ) : (
               <div style={{ animation: 'fadeIn 0.2s ease', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {blankCorrect ? (
                   <div style={{ padding: '14px 16px', background: 'rgba(0,232,122,0.12)', borderRadius: '12px', border: '1px solid rgba(0,232,122,0.3)', textAlign: 'center' }}>
-                    <p style={{ fontSize: '22px', marginBottom: '4px' }}>🎉</p>
+                    <p style={{ fontSize: '22px', marginBottom: '4px' }}>&#127881;</p>
                     <p style={{ fontSize: '16px', fontWeight: 700, color: '#00e87a' }}>Yes! That is right!</p>
                   </div>
                 ) : (
-                  <div style={{ padding: '14px 16px', background: 'rgba(226,75,74,0.12)', borderRadius: '12px', border: '1px solid rgba(226,75,74,0.3)' }}>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>Not quite — the answer is:</p>
-                    <p style={{ fontSize: '20px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>{card.answer}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>That is okay — keep going!</p>
+                  <div style={{ padding: '14px 16px', background: 'rgba(239,159,39,0.1)', borderRadius: '12px', border: '1px solid rgba(239,159,39,0.25)', textAlign: 'center' }}>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Not quite. Try again!</p>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>Trying again in a moment...</p>
                   </div>
                 )}
               </div>
