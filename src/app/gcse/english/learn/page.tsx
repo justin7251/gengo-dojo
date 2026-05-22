@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -138,4 +139,3 @@ function Screen({ children }: { children: React.ReactNode }) {
 }
 
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '32px', height: '32px', border: '2px solid rgba(127,119,221,0.2)', borderTopColor: '#7F77DD', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }

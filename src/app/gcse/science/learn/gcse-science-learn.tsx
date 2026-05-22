@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -185,10 +186,8 @@ function Screen({ children }: { children: React.ReactNode }) {
     <main style={{ minHeight: '100vh', background: '#040e08', backgroundImage: 'radial-gradient(ellipse at top, #081c10 0%, #040e08 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(0,232,122,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,0.02) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
-    </main>
+      </main>
   );
 }
 
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '32px', height: '32px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }

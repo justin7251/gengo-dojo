@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -243,8 +244,7 @@ export default function AdminEditLessonPage() {
         )}
       </div>
 
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
-    </Screen>
+      </Screen>
   );
 }
 
@@ -270,4 +270,3 @@ function Screen({ children }: { children: React.ReactNode }) {
 const LABEL_STYLE: React.CSSProperties = { fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: '5px' };
 const INPUT_STYLE: React.CSSProperties = { width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#fff', fontSize: '13px', outline: 'none', lineHeight: 1.6 };
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }

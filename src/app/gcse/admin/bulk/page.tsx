@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -367,8 +368,7 @@ export default function AdminBulkGeneratePage() {
         </div>
       )}
 
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
-    </Screen>
+      </Screen>
   );
 }
 
@@ -382,4 +382,3 @@ function Screen({ children }: { children: React.ReactNode }) {
 }
 
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
