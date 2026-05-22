@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -118,10 +119,3 @@ export function DueReviewsList({ uid, onStartReview }: Props) {
   );
 }
 
-function Spinner() {
-  return (
-    <div style={{ width: '20px', height: '20px', border: '2px solid rgba(239,159,39,0.15)', borderTopColor: '#EF9F27', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}>
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
-    </div>
-  );
-}

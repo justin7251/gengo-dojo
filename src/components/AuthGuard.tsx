@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { onAuth } from '@/lib/auth';
-import { User } from 'firebase/auth';
+import { useRouter }           from 'next/navigation';
+import { onAuth }              from '@/lib/auth';
+import { User }                from 'firebase/auth';
+import { Spinner }             from '@/components/Spinner';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null | 'loading'>('loading');
-  const router = useRouter();
+  const router          = useRouter();
 
   useEffect(() => {
     return onAuth((u) => {
@@ -18,8 +19,28 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (user === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+      <div style={{
+        minHeight:       '100vh',
+        background:      'var(--bg)',
+        display:         'flex',
+        flexDirection:   'column',
+        alignItems:      'center',
+        justifyContent:  'center',
+        gap:             '16px',
+        fontFamily:      'var(--font-ui)',
+      }}>
+        <div style={{ fontSize: '42px', animation: 'float 1.8s ease-in-out infinite' }}>
+          🏯
+        </div>
+        <Spinner size={36} color="var(--green)" />
+        <p style={{
+          fontSize:   '14px',
+          fontWeight: '700',
+          color:      'var(--muted)',
+          letterSpacing: '0.04em',
+        }}>
+          Loading dojo…
+        </p>
       </div>
     );
   }

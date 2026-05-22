@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -381,7 +382,7 @@ function Screen({ children, color, onBack }: { children: React.ReactNode; color:
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} } @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }`}</style>
+      <style>{`@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }`}</style>
     </main>
   );
 }
@@ -398,4 +399,3 @@ function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
 
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#040e08', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner({ color }: { color: string }) { return <div style={{ width: '32px', height: '32px', border: `2px solid ${color}25`, borderTopColor: color, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
