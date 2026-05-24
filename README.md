@@ -1,6 +1,6 @@
 # 言語道場 — Gengo Dojo
 
-AI-powered language learning app that generates vocabulary around your personal interests. Built with Next.js, Firebase, and GROQ.
+AI-powered learning platform combining language acquisition with GCSE exam preparation. Built with Next.js, Firebase, and GROQ.
 
 **Live app:** [gengo-dojo.vercel.app](https://gengo-dojo.vercel.app)
 
@@ -8,46 +8,81 @@ AI-powered language learning app that generates vocabulary around your personal 
 
 ## What it does
 
-Most language apps teach the same generic word lists to everyone. Gengo Dojo generates vocabulary specifically around what you care about — if you love Judo, you learn judo words. If you love cooking, you learn cooking words. The AI builds your curriculum, not a textbook author.
+Gengo Dojo is two products in one:
+
+**Language learning** — generates vocabulary around your personal interests using AI. If you love Judo, you learn judo words. If you love cooking, you learn cooking words. Your curriculum, not a textbook author's.
+
+**GCSE prep** — a full AQA exam preparation system for Maths, English Language, and Combined Science (Ages 10–16). Lessons use a Hook → Analogy → Rule → Example → Blank → Explain → Recall structure designed for 10–12 year olds, with spaced repetition, stuck detection, and AI marking.
 
 ---
 
 ## Features
 
-### Learning modes
-- **Flashcards** — see the character, reveal meaning, rate yourself with spaced repetition (Again / Hard / Good / Easy)
-- **Quiz** — multiple choice questions with instant feedback and example sentences
-- **Writing practice** — draw characters on a canvas with a ghost guide overlay, self-rate your strokes
-- **Kana dojo** — dedicated hiragana and katakana practice with flashcards, listening, and writing modes
+### Language learning
 
-### AI vocabulary generation
-- Generates 15 words per topic using GROQ (Llama 3.3 70B)
-- Each word includes: character, reading, romanization, meaning, example sentence, and English translation
-- Shared vocabulary cache — if someone already generated "Judo beginner Japanese", you get it instantly from Firestore instead of calling the AI
+**Vocabulary generation**
+- AI generates 15 words per topic (GROQ Llama 3.3 70B)
+- Each word includes character, reading, romanization, meaning, example sentence, and translation
+- Shared vocabulary cache — if someone already generated the same topic, you get it instantly from Firestore
 - Rate limited: 10 generations per day, 30 second cooldown between each
 
-### Spaced repetition (SRS)
-- Review schedule: 1 day → 3 days → 7 days → 30 days
-- Wrong answers reset to tomorrow
-- Progress tracked per word in Firestore
-- Dashboard shows words due for review today
+**Study modes**
+- **Flashcards** — SRS with Again / Hard / Good / Easy ratings
+- **Quiz** — multiple choice with instant feedback and example sentences
+- **Writing practice** — canvas drawing with trace, ghost, and free guide modes for beginners
+- **Shadow mode** — listen to a sentence, repeat aloud, mic scores your pronunciation
+- **Survival mode** — 3 lives, 8 second timer per question, wrong answers reset SRS
+- **Mission modes** — Scrap (30s blitz), Deep Work (20 words + random encounters), Brain Dead (drag-match pairs)
+- **Kana dojo** — full hiragana and katakana with flashcards, listening, and writing practice
 
-### Voice
-- Tap 🔊 on any card to hear the word or example sentence
-- Uses Web Speech API — free, no API key required, runs on device
-- Supports: Japanese (ja-JP), Chinese (zh-CN), Korean (ko-KR), Spanish (es-ES), French (fr-FR)
+**Spy / mission system**
+- Agent profile with codename, cover status, suspicion level, and chapter 1–10
+- Story fragments unlock as chapters progress
+- Random encounters during Deep Work (boss, glitch, intercept)
+- Global leaderboard with score formula: (streak × 10) + (missions × 3) + (correct × 2)
+- Interrogation mode triggers when suspicion reaches 5 — one wrong answer resets chapter
 
-### Languages supported
-- **Learning:** Japanese, Mandarin Chinese, Korean, Spanish, French
-- **Interface/meanings:** English, Spanish, French
-- A Spanish speaker learning Japanese gets meanings in Spanish, not English
+**Languages supported**
+- Learning: Japanese, Mandarin Chinese, Korean, Spanish, French
+- Interface: English, Spanish, French — a Spanish speaker gets meanings in Spanish, not English
 
-### Kana learning
-- Full hiragana (46 characters) and katakana (46 characters)
-- Each character has a mnemonic memory aid
-- Three practice modes: flashcard, listen (hear sound → pick character), write (canvas tracing)
-- Tap any character on the overview grid to hear it spoken
-- Progress tracked separately from vocabulary
+---
+
+### GCSE prep (AQA · Year 11)
+
+**Three subjects**
+- **Maths** — Algebra, Geometry & Measures, Statistics, Number, Practice papers (Foundation + Higher)
+- **English Language** — Reading comprehension, Language analysis, Writing practice, Vocabulary, Mock papers
+- **Combined Science** — Biology, Chemistry, Physics, Required equations, Required practicals
+
+**Learn mode — Hook → Practise flow**
+- 7-card lesson per topic: Hook (guess first) → Analogy (everyday comparison) → Rule (plain English + technical term) → Example (3 steps) → Fill-in-blank (active recall) → Explain (write to a friend) → Recall (same question as Hook)
+- Written for age 10–12 reading level — plain English first, technical term introduced only after understanding
+- Quick check (3 questions: multiple choice + fill blank + short answer) immediately after every lesson
+- Spaced repetition schedules lessons for review at 3 → 7 → 14 → 30 → 60 day intervals
+- Stuck detection: hint appears after 2 wrong attempts, answer auto-revealed after 3
+- Lessons generated by AI, reviewed and published by admin, served from Firestore — zero AI cost per student
+
+**Exam practice**
+- AI generates fresh AQA-style questions every session
+- **Reading**: P1/P2 extract + Q1–Q4 AI marking per assessment objective
+- **Language analysis**: PETER framework with technique identification grid
+- **Writing**: 45-minute timed tasks, AI marks AO5 (24 marks) + AO6 (16 marks) with strengths, targets, and model sentence
+- **Maths**: step-by-step working with M (method), A (accuracy), B (independent) marks
+- **Science**: subject-specific marking — Biology rewards mechanism language, Chemistry gives consequential marks, Physics requires units on all calculations
+- **Mock papers**: full 80-mark timed paper with grade 2–9 estimate
+
+**Progress and motivation**
+- Firestore-backed streak tracking with 70-day contribution calendar
+- Section completion celebration with confetti animation
+- Today's plan card: next lesson, due flashcards, practice suggestion
+- Progress screen: strongest/weakest subject, vocab stats, lessons done
+- Onboarding flow: pick subjects, year group, weakest topics
+
+**Admin system**
+- Generate lessons with AI, edit every card field inline before publishing
+- Bulk generate all 42 lessons across Maths, English, Science in one run (~4 minutes)
+- Per-topic teaching notes for hard concepts (quadratics, osmosis, circle theorems, etc.)
 
 ---
 
@@ -55,13 +90,14 @@ Most language apps teach the same generic word lists to everyone. Gengo Dojo gen
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router, TypeScript) |
+| Framework | Next.js (App Router, TypeScript) |
 | Hosting | Vercel |
 | Auth | Firebase Authentication (Google sign-in) |
 | Database | Firestore |
 | AI | GROQ API (llama-3.3-70b-versatile) |
 | Voice | Web Speech API (browser built-in) |
-| Fonts | Noto Sans JP + Noto Sans SC via next/font/google |
+| Push notifications | Web Push API + Vercel cron |
+| Fonts | Space Grotesk + JetBrains Mono + Noto Sans JP/SC |
 | Styling | Inline styles + global CSS (no UI library) |
 
 ---
@@ -71,95 +107,112 @@ Most language apps teach the same generic word lists to everyone. Gengo Dojo gen
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Onboarding — sign in + interests
-│   ├── dashboard/page.tsx    # Main dashboard
-│   ├── flashcards/page.tsx   # Flashcard study mode
-│   ├── quiz/page.tsx         # Multiple choice quiz
-│   ├── words/page.tsx        # Full word list with search + filter
-│   ├── write/page.tsx        # Vocabulary writing practice
-│   ├── kana/
-│   │   ├── page.tsx          # Kana hub + character grid
-│   │   ├── flashcard/page.tsx
-│   │   ├── listen/page.tsx
-│   │   └── write/page.tsx
+│   ├── page.tsx                    # Sign in
+│   ├── onboarding/page.tsx         # Subject + year group picker
+│   ├── dashboard/page.tsx          # Main dashboard
+│   ├── flashcards/page.tsx         # SRS flashcards
+│   ├── quiz/page.tsx               # Multiple choice
+│   ├── words/page.tsx              # Word list with search + filter
+│   ├── write/page.tsx              # Canvas writing practice
+│   ├── shadow/page.tsx             # Pronunciation scoring
+│   ├── survival/page.tsx           # 3-lives timed mode
+│   ├── mission/
+│   │   ├── page.tsx                # Mission path map
+│   │   ├── scrap/page.tsx          # 30s blitz
+│   │   ├── deepwork/page.tsx       # SRS + encounters
+│   │   └── braindead/page.tsx      # Drag-match
+│   ├── gcse/
+│   │   ├── page.tsx                # Subject picker
+│   │   ├── admin/
+│   │   │   ├── page.tsx            # Lesson manager
+│   │   │   ├── edit/[id]/page.tsx  # Card editor
+│   │   │   └── bulk/page.tsx       # Bulk generate
+│   │   ├── maths/
+│   │   │   ├── page.tsx
+│   │   │   ├── learn/page.tsx
+│   │   │   ├── algebra/page.tsx
+│   │   │   ├── geometry/page.tsx
+│   │   │   ├── statistics/page.tsx
+│   │   │   ├── number/page.tsx
+│   │   │   └── practice/page.tsx
+│   │   ├── english/
+│   │   │   ├── page.tsx
+│   │   │   ├── learn/page.tsx
+│   │   │   ├── reading/page.tsx
+│   │   │   ├── language/page.tsx
+│   │   │   ├── writing/page.tsx
+│   │   │   ├── vocab/page.tsx
+│   │   │   └── papers/page.tsx
+│   │   └── science/
+│   │       ├── page.tsx
+│   │       ├── learn/page.tsx
+│   │       ├── biology/page.tsx
+│   │       ├── chemistry/page.tsx
+│   │       ├── physics/page.tsx
+│   │       ├── equations/page.tsx
+│   │       └── practicals/page.tsx
 │   └── api/
-│       └── generate/route.ts # Server-side GROQ vocabulary generation
+│       ├── generate/route.ts       # Vocab generation
+│       ├── gcse/learn/route.ts     # Lesson generation
+│       ├── gcse/english/...        # English marking routes
+│       ├── gcse/maths/...          # Maths question + marking routes
+│       ├── gcse/science/...        # Science question + marking routes
+│       └── push/...                # Push notification routes
 ├── lib/
-│   ├── types.ts              # Shared TypeScript types
-│   ├── firebase.ts           # Firebase app init
-│   ├── firestore.ts          # All Firestore read/write helpers
-│   ├── auth.ts               # Google sign-in helpers
-│   ├── srs.ts                # Spaced repetition logic
-│   └── kana.ts               # Hiragana + katakana data with mnemonics
+│   ├── types.ts                    # Shared TypeScript types
+│   ├── firebase.ts                 # Firebase client init
+│   ├── firestore.ts                # Firestore read/write helpers
+│   ├── auth.ts                     # Google sign-in helpers
+│   ├── srs.ts                      # Vocabulary spaced repetition
+│   ├── kana.ts                     # Hiragana + katakana data
+│   ├── agent.ts                    # Spy system helpers
+│   ├── encounter.ts                # Random encounter engine
+│   ├── streak.ts                   # Daily streak tracking
+│   ├── lesson-srs.ts               # Lesson spaced repetition
+│   ├── gcse-lessons.ts             # GCSE lesson Firestore helpers
+│   └── push.ts                     # Push notification helpers
 └── components/
-    └── AuthGuard.tsx         # Route protection wrapper
+    ├── AuthGuard.tsx
+    ├── GCSELessonCard.tsx          # 7-card lesson swiper
+    ├── GCSEQuickCheck.tsx          # 3-question post-lesson check
+    ├── GCSEMathsTopic.tsx          # Shared maths topic page
+    ├── GCSEScienceTopic.tsx        # Shared science topic page
+    ├── GCSELearnPages.tsx          # English + Science learn pages
+    ├── DueReviews.tsx              # SRS due lesson list
+    ├── LessonComplete.tsx          # Section completion celebration
+    ├── StuckDetection.tsx          # Hint + reveal components
+    ├── TodayPlanCard.tsx           # Dashboard today card
+    └── NotificationSettings.tsx
 ```
 
 ---
 
-## Firestore structure
+## Firestore collections
 
 ```
-users/
-  {uid}/
-    interests:      string[]
-    targetLanguage: 'ja' | 'zh' | 'ko' | 'es' | 'fr'
-    nativeLanguage: 'en' | 'es' | 'fr'
-    level:          'beginner' | 'intermediate' | 'advanced'
-
-vocabulary/
-  {uid}/words/
-    {wordId}/
-      kanji:               string
-      reading:             string
-      romanization:        string
-      meaning:             string
-      example:             string   ← 100% target language
-      example_translation: string   ← native language
-      type:                'noun' | 'verb' | 'adjective' | 'other'
-      topic:               string
-      targetLanguage:      string
-      nativeLanguage:      string
-      level:               string
-
-progress/
-  {uid}/words/
-    {wordId}/
-      correct:      number
-      wrong:        number
-      nextReview:   timestamp
-      interval:     'new' | 'wrong' | 'hard' | 'good' | 'easy'
-      lastReviewed: timestamp
-
-kana_progress/
-  {uid}/chars/
-    {char}/         ← e.g. "あ", "ア"
-      correct:      number
-      wrong:        number
-      nextReview:   timestamp
-      interval:     string
-
-vocabulary_cache/
-  {targetLang}-{nativeLang}-{level}-{topic}/
-    words:      Word[]
-    createdAt:  timestamp
-    (expires after 30 days)
-
-generation_quota/
-  {uid}/
-    dailyCount:      number
-    lastGeneratedAt: timestamp
-    resetDate:       'YYYY-MM-DD'
+users/{uid}                               UserProfile
+vocabulary/{topic}/words/{id}             SharedWord
+  /translations/{nativeLang}              WordTranslation
+user_words/{uid}/{tLang}-{nLang}/{id}     UserWord
+progress/{uid}/{tLang}-{nLang}/{id}       SRS Progress
+kana_progress/{uid}/chars/{char}          Kana progress
+vocabulary_cache/{cacheId}                Cached words (30 day TTL)
+generation_quota/{uid}                    Rate limiting
+agents/{uid}                              AgentProfile
+leaderboard/{uid}                         LeaderboardEntry
+push_subscriptions/{uid}                  Push endpoint
+streaks/{uid}                             StreakData
+lesson_reviews/{uid}/reviews/{lessonId}   LessonReview (SRS)
+gcse_lessons/{lessonId}                   GCSELesson
+gcse_lesson_progress/{uid}/lessons/{id}   LessonProgress
 ```
 
 ---
 
 ## Environment variables
 
-Create `.env.local` in the project root:
-
 ```bash
-# Firebase (client-side)
+# Firebase client
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
@@ -167,27 +220,36 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 
-# GROQ (server-side only — never expose to client)
-GROQ_API_KEY=
-```
+# Firebase Admin (server-side only)
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
 
-All variables must also be added to Vercel under **Project Settings → Environment Variables** for production.
+# GROQ (server-side only)
+GROQ_API_KEY=
+
+# Web Push
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_EMAIL=
+
+# GCSE admin access
+NEXT_PUBLIC_ADMIN_UID=
+
+# Vercel cron authentication
+CRON_SECRET=
+```
 
 ---
 
 ## Getting started
 
 ```bash
-# Clone and install
 git clone https://github.com/your-username/gengo-dojo
 cd gengo-dojo
 npm install
-
-# Add environment variables
 cp .env.example .env.local
-# Fill in your Firebase and GROQ keys
-
-# Run locally
+# Fill in your keys
 npm run dev
 ```
 
@@ -200,69 +262,43 @@ Open [http://localhost:3000](http://localhost:3000).
 1. Create a project at [firebase.google.com](https://firebase.google.com)
 2. Enable **Authentication → Google** sign-in
 3. Create a **Firestore** database in production mode
-4. Copy your config values into `.env.local`
-5. Deploy these Firestore security rules:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /vocabulary/{userId}/words/{wordId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /progress/{userId}/words/{wordId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /kana_progress/{userId}/chars/{char} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /vocabulary_cache/{cacheId} {
-      allow read:  if request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    match /generation_quota/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
+4. Enable **Firebase Admin SDK** — Project Settings → Service Accounts → Generate new private key
+5. Copy all config values into `.env.local`
+6. Deploy Firestore security rules: `firebase deploy --only firestore:rules`
 
 ---
 
 ## GROQ setup
 
 1. Get a free API key at [console.groq.com](https://console.groq.com)
-2. Add `GROQ_API_KEY=gsk_...` to `.env.local` and Vercel
-
-The app uses `llama-3.3-70b-versatile` with `response_format: { type: 'json_object' }` to guarantee clean JSON output. The prompt explicitly instructs the model to write example sentences in the target language only, with a separate translation field.
+2. Add `GROQ_API_KEY=gsk_...` to `.env.local` and Vercel environment variables
 
 ---
 
-## Deploying to Vercel
+## Web push setup
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
+npm install web-push
+node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.log(k)"
 ```
 
-Make sure all environment variables are set in Vercel before deploying — the build will fail if `GROQ_API_KEY` is missing.
+Add the keys to `.env.local`. The Vercel cron in `vercel.json` fires daily at 07:00 UTC.
+
+---
+
+## GCSE lesson setup
+
+1. Set `NEXT_PUBLIC_ADMIN_UID` to your Firebase UID (Firebase Console → Authentication → Users)
+2. Go to `/gcse/admin/bulk`
+3. Select all 42 topics → Generate as drafts (takes ~4 minutes)
+4. Review each lesson at `/gcse/admin` → Edit → Publish
+5. Students load lessons from Firestore instantly — no AI call, no cost
 
 ---
 
 ## Spaced repetition intervals
 
+### Vocabulary
 | Rating | Next review |
 |---|---|
 | Again | 1 day |
@@ -270,7 +306,16 @@ Make sure all environment variables are set in Vercel before deploying — the b
 | Good | 7 days |
 | Easy | 30 days |
 
-If a word is marked Easy 3+ times it is considered mastered and shown in the dashboard stats.
+### GCSE lessons
+| Review | Interval |
+|---|---|
+| After completion | 3 days |
+| 1st review | 7 days |
+| 2nd review | 14 days |
+| 3rd review | 30 days |
+| 4th+ review | 60 days |
+
+Poor score (0–1) resets interval to 3 days.
 
 ---
 
@@ -278,12 +323,29 @@ If a word is marked Easy 3+ times it is considered mastered and shown in the das
 
 | Limit | Value |
 |---|---|
-| Daily generations | 10 per user |
+| Daily vocab generations | 10 per user |
 | Cooldown between generations | 30 seconds |
 | Vocabulary cache TTL | 30 days |
 | Words per generation | 15 |
 
-Cache hits (words already generated by another user) still apply the cooldown but do not count toward the daily limit.
+---
+
+## Design system
+
+Dark spy aesthetic. Each section has its own colour identity:
+
+| Screen | Background | Accent |
+|---|---|---|
+| Dashboard | `#0a0e1a` | `#7F77DD` purple |
+| Flashcards | `#0a6e4a` | `#00e87a` green |
+| Survival | `#1a0505` | `#E24B4A` red |
+| Shadow | `#1a1000` | `#EF9F27` amber |
+| Writing | `#1a0510` | `#D4537E` pink |
+| GCSE Maths | `#050a18` | `#378ADD` blue |
+| GCSE English | `#080614` | `#7F77DD` purple |
+| GCSE Science | `#040e08` | `#00e87a` green |
+
+Fonts: `Space Grotesk` (UI text), `JetBrains Mono` (numbers/code), `Noto Sans JP/SC` (CJK characters).
 
 ---
 
@@ -293,10 +355,11 @@ Cache hits (words already generated by another user) still apply the cooldown bu
 - [ ] Grammar pattern cards
 - [ ] Sentence mining (i+1 method)
 - [ ] Kanji radical learning
-- [ ] Thematic word groups (body, numbers, time, directions)
-- [ ] Streak tracking and learning history
-- [ ] Mobile app (React Native or Flutter)
-- [ ] Offline mode with local caching
+- [ ] GCSE History and Geography modules
+- [ ] Parent/teacher read-only progress link
+- [ ] Lesson rating system
+- [ ] Mobile app (React Native)
+- [ ] Offline mode
 
 ---
 
