@@ -1,6 +1,7 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { signOut } from '@/lib/auth';
@@ -20,7 +21,6 @@ import { getAgentProfile, createAgentProfile } from '@/lib/agent';
 import { AgentProfile } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 import NotificationSettings from '@/components/NotificationSettings';
-import { TodayPlanCard } from '@/components/TodayPlanCard';
 
 const INTERESTS = [
   'Judo','Anime','Cooking','Gaming','Music','Travel','Fashion',
@@ -33,6 +33,71 @@ export default function DashboardPage() {
   return <AuthGuard><Dashboard /></AuthGuard>;
 }
 
+// ── Animated counter hook ─────────────────────────────────────────────────
+function useCountUp(target: number, duration = 800, delay = 0) {
+  const [value, setValue] = useState(0);
+  const started = useRef(false);
+  useEffect(() => {
+    if (target === 0) { setValue(0); return; }
+    if (started.current) return;
+    started.current = true;
+    const timeout = setTimeout(() => {
+      const start = performance.now();
+      function tick(now: number) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setValue(Math.round(eased * target));
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [target, duration, delay]);
+  return value;
+}
+
+// ── Animated bar hook ─────────────────────────────────────────────────────
+function useAnimatedWidth(target: number, delay = 300) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const t = setTimeout(() => setWidth(target), delay);
+    return () => clearTimeout(t);
+  }, [target, delay]);
+  return width;
+}
+
+// ── Stat card with animated counter ──────────────────────────────────────
+function StatCard({ label, value, accent, delay }: {
+  label: string; value: number; accent?: boolean; delay: number;
+}) {
+  const displayed = useCountUp(value, 700, delay);
+  return (
+    <div style={{
+      background: 'var(--bg)', borderRadius: '8px',
+      padding: '10px 8px', textAlign: 'center',
+      border: '1px solid var(--border)',
+      animation: `fadeUp 0.4s ease both`,
+      animationDelay: `${delay}ms`,
+    }}>
+      <p style={{
+        fontSize: '18px', fontWeight: 600,
+        color: accent ? '#EF9F27' : 'var(--fg)',
+        lineHeight: 1,
+        fontVariantNumeric: 'tabular-nums',
+      }}>
+        {displayed}
+      </p>
+      <p style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>
+        {label}
+      </p>
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
 function Dashboard() {
   const router = useRouter();
 
@@ -51,6 +116,8 @@ function Dashboard() {
   const [newNativeLang, setNewNativeLang]   = useState<NativeLang>('en');
   const [newTargetLang, setNewTargetLang]   = useState<TargetLang>('ja');
   const [saving, setSaving]                 = useState(false);
+  // Track when data is ready so animations start at the right moment
+  const [ready, setReady]           = useState(false);
 
   useEffect(() => {
     return onAuth(async (user) => {
@@ -69,6 +136,8 @@ function Dashboard() {
         setAgent(ag ?? await createAgentProfile(user.uid, p.targetLang));
       }
       setLoading(false);
+      // Small delay so the DOM is painted before animations fire
+      setTimeout(() => setReady(true), 50);
     });
   }, []);
 
@@ -110,7 +179,6 @@ function Dashboard() {
   async function handleUpdateProfile() {
     if (!profile || saving) return;
     setSaving(true);
-    if (!profile) return;
     const updated: UserProfile = { ...profile, interests: newInterests, level: newLevel, nativeLang: newNativeLang, targetLang: newTargetLang };
     await saveUserProfile(updated);
     if (newTargetLang !== profile.targetLang || newNativeLang !== profile.nativeLang) {
@@ -131,9 +199,14 @@ function Dashboard() {
   const targetInfo = TARGET_LANGUAGES.find(l => l.code === profile?.targetLang);
   const sameLang   = newNativeLang === newTargetLang;
 
-  // Cover color
   const coverColor = agent?.coverStatus === 'intact' ? '#00e87a'
     : agent?.coverStatus === 'compromised' ? '#EF9F27' : '#E24B4A';
+
+  // Animated suspicion bar width
+  const suspicionPct = useAnimatedWidth(
+    agent ? (agent.suspicionLevel / 5) * 100 : 0,
+    600
+  );
 
   if (loading) return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
@@ -149,6 +222,7 @@ function Dashboard() {
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '1.5rem 0 1rem',
+          animation: ready ? 'fadeDown 0.4s ease both' : 'none',
         }}>
           <div>
             <p style={{ fontSize: '11px', letterSpacing: '0.15em', color: 'var(--muted)', marginBottom: '2px' }}>
@@ -163,6 +237,7 @@ function Dashboard() {
               display: 'flex', alignItems: 'center', gap: '10px',
               background: 'var(--surface)', borderRadius: '99px',
               padding: '8px 14px', border: '1px solid var(--border)',
+              animation: ready ? 'fadeDown 0.4s ease 0.1s both' : 'none',
             }}>
               <div style={{
                 width: '8px', height: '8px', borderRadius: '50%',
@@ -187,13 +262,15 @@ function Dashboard() {
             border: `1px solid ${coverColor}33`,
             padding: '1.25rem', marginBottom: '1.5rem',
             position: 'relative', overflow: 'hidden',
+            animation: ready ? 'fadeUp 0.5s ease 0.05s both' : 'none',
           }}>
-            {/* Glow orb */}
+            {/* Animated glow orb — drifts slowly */}
             <div style={{
               position: 'absolute', top: '-40px', right: '-40px',
               width: '140px', height: '140px', borderRadius: '50%',
               background: `${coverColor}15`,
               filter: 'blur(30px)', pointerEvents: 'none',
+              animation: 'orbDrift 6s ease-in-out infinite',
             }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
@@ -209,6 +286,7 @@ function Dashboard() {
                     fontSize: '11px', padding: '2px 8px', borderRadius: '99px',
                     background: `${coverColor}20`, color: coverColor,
                     border: `1px solid ${coverColor}40`,
+                    animation: 'fadeIn 0.4s ease 0.3s both',
                   }}>
                     {agent.coverStatus === 'intact' ? '✓ Intact'
                       : agent.coverStatus === 'compromised' ? '⚠ Compromised' : '✗ Blown'}
@@ -218,55 +296,39 @@ function Dashboard() {
                   {agent.city} · Chapter {agent.chapter}
                 </p>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: coverColor, lineHeight: 1 }}>
-                  {agent.streakDays}
-                </p>
+              {/* Streak — counts up */}
+              <div style={{ textAlign: 'right', animation: ready ? 'fadeIn 0.4s ease 0.4s both' : 'none' }}>
+                <StreakCounter value={agent.streakDays} color={coverColor} ready={ready} />
                 <p style={{ fontSize: '11px', color: 'var(--muted)' }}>day streak</p>
               </div>
             </div>
 
-            {/* Stats row */}
+            {/* Stats row — each card staggers in */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-              {[
-                { label: 'Words',    value: words.length },
-                { label: 'Due',      value: dueCount,  accent: dueCount > 0 },
-                { label: 'Mastered', value: mastered },
-                { label: 'Missions', value: agent.totalMissions },
+              {ready && [
+                { label: 'Words',    value: words.length,          accent: false, delay: 150 },
+                { label: 'Due',      value: dueCount,              accent: dueCount > 0, delay: 220 },
+                { label: 'Mastered', value: mastered,              accent: false, delay: 290 },
+                { label: 'Missions', value: agent.totalMissions,   accent: false, delay: 360 },
               ].map(s => (
-                <div key={s.label} style={{
-                  background: 'var(--bg)', borderRadius: '8px',
-                  padding: '10px 8px', textAlign: 'center',
-                  border: '1px solid var(--border)',
-                }}>
-                  <p style={{
-                    fontSize: '18px', fontWeight: 600,
-                    color: s.accent ? '#EF9F27' : 'var(--fg)',
-                    lineHeight: 1,
-                  }}>
-                    {s.value}
-                  </p>
-                  <p style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>
-                    {s.label}
-                  </p>
-                </div>
+                <StatCard key={s.label} {...s} />
               ))}
             </div>
 
-            {/* Suspicion bar */}
+            {/* Suspicion bar — fills in */}
             {agent.suspicionLevel > 0 && (
-              <div style={{ marginTop: '10px' }}>
+              <div style={{ marginTop: '10px', animation: ready ? 'fadeIn 0.4s ease 0.5s both' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '0.08em' }}>SUSPICION</span>
                   <span style={{ fontSize: '10px', color: '#E24B4A' }}>{agent.suspicionLevel}/5</span>
                 </div>
-                <div style={{ height: '3px', background: 'var(--bg)', borderRadius: '2px' }}>
+                <div style={{ height: '3px', background: 'var(--bg)', borderRadius: '2px', overflow: 'hidden' }}>
                   <div style={{
                     height: '3px', borderRadius: '2px',
-                    width: `${(agent.suspicionLevel / 5) * 100}%`,
+                    width: `${suspicionPct}%`,
                     background: '#E24B4A',
                     boxShadow: '0 0 6px rgba(226,75,74,0.5)',
-                    transition: 'width 0.4s ease',
+                    transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)',
                   }} />
                 </div>
               </div>
@@ -275,29 +337,41 @@ function Dashboard() {
         )}
 
         {/* ── Mission path ── */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{
+          marginBottom: '1.5rem',
+          animation: ready ? 'fadeUp 0.5s ease 0.2s both' : 'none',
+        }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '1rem' }}>
             MISSION PATH
           </p>
 
           <div style={{ position: 'relative', padding: '0 0 0 52px' }}>
-            {/* Vertical line */}
+            {/* Vertical line — draws down on load */}
             <div style={{
               position: 'absolute', left: '21px', top: '10px', bottom: '10px', width: '2px',
               background: 'linear-gradient(to bottom, var(--neon), rgba(0,232,122,0.1))',
+              transformOrigin: 'top',
+              animation: ready ? 'lineGrow 0.6s cubic-bezier(0.16,1,0.3,1) 0.25s both' : 'none',
             }} />
 
-            {/* Mission nodes */}
             {[
               { emoji: '🕵️', label: 'Mission Briefing', sub: 'Choose your mode', route: '/mission', color: '#7F77DD', active: true },
               { emoji: '⚡', label: 'Scrap', sub: '30 second blitz', route: '/mission/scrap', color: '#EF9F27', active: words.length >= 4 },
               { emoji: '🧠', label: 'Deep Work', sub: '20 min immersion', route: '/mission/deepwork', color: '#00e87a', active: words.length >= 4 },
               { emoji: '🌙', label: 'Brain Dead', sub: 'Passive matching', route: '/mission/braindead', color: '#378ADD', active: words.length >= 4 },
             ].map((m, i) => (
-              <div key={m.label} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', position: 'relative' }}>
+              <div
+                key={m.label}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  marginBottom: '10px', position: 'relative',
+                  animation: ready ? `fadeRight 0.4s ease ${0.3 + i * 0.07}s both` : 'none',
+                }}
+              >
                 {/* Node */}
                 <button
                   onClick={() => m.active && router.push(m.route)}
+                  className="mission-node"
                   style={{
                     position: 'absolute', left: '-52px',
                     width: '42px', height: '42px', borderRadius: '50%',
@@ -307,7 +381,7 @@ function Dashboard() {
                     fontSize: '18px', cursor: m.active ? 'pointer' : 'default',
                     boxShadow: m.active ? `0 0 16px ${m.color}40` : 'none',
                     animation: m.active && i === 0 ? 'glow-pulse 2s ease-in-out infinite' : 'none',
-                    transition: 'all 0.2s',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                   }}
                 >
                   {m.active ? m.emoji : '🔒'}
@@ -316,13 +390,14 @@ function Dashboard() {
                 {/* Label */}
                 <button
                   onClick={() => m.active && router.push(m.route)}
+                  className={m.active ? 'mission-row' : ''}
                   style={{
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 14px', borderRadius: '12px',
                     background: 'var(--surface)', border: `1px solid ${m.active ? `${m.color}30` : 'var(--border)'}`,
                     cursor: m.active ? 'pointer' : 'default',
                     opacity: m.active ? 1 : 0.4,
-                    fontFamily: 'var(--font-ui)', transition: 'all 0.15s',
+                    fontFamily: 'var(--font-ui)', transition: 'all 0.18s ease',
                   }}
                 >
                   <div>
@@ -331,7 +406,10 @@ function Dashboard() {
                     </p>
                     <p style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'left' }}>{m.sub}</p>
                   </div>
-                  {m.active && <span style={{ fontSize: '12px', color: m.color }}>›</span>}
+                  {m.active && <span style={{
+                    fontSize: '14px', color: m.color,
+                    transition: 'transform 0.18s ease',
+                  }} className="mission-arrow">›</span>}
                 </button>
               </div>
             ))}
@@ -339,7 +417,10 @@ function Dashboard() {
         </div>
 
         {/* ── Study tools ── */}
-        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '10px' }}>
+        <p style={{
+          fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '10px',
+          animation: ready ? 'fadeUp 0.4s ease 0.35s both' : 'none',
+        }}>
           STUDY TOOLS
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '1.5rem' }}>
@@ -353,27 +434,38 @@ function Dashboard() {
             ...(profile?.targetLang === 'ja' || profile?.targetLang === 'ko'
               ? [{ emoji: 'あ', label: profile.targetLang === 'ja' ? 'Kana' : 'Hangul', sub: 'Characters', route: '/kana', color: '#5DCAA5' }]
               : []),
-          ].map(tool => (
+          ].map((tool, i) => (
             <button
               key={tool.label}
               onClick={() => router.push(tool.route)}
+              className="study-tool"
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '12px 14px', borderRadius: '12px',
                 background: 'var(--surface)', border: `1px solid ${tool.color}25`,
                 cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                transition: 'all 0.15s', textAlign: 'left',
+                transition: 'all 0.18s ease', textAlign: 'left',
+                position: 'relative', overflow: 'hidden',
+                animation: ready ? `fadeUp 0.4s ease ${0.38 + i * 0.05}s both` : 'none',
               }}
             >
+              {/* Hover shimmer */}
+              <div className="tool-shimmer" style={{
+                position: 'absolute', inset: 0,
+                background: `radial-gradient(circle at 30% 50%, ${tool.color}12, transparent 60%)`,
+                opacity: 0, transition: 'opacity 0.25s ease',
+                pointerEvents: 'none',
+              }} />
               <span style={{
                 fontSize: tool.emoji.length > 2 ? '22px' : '18px',
                 width: '36px', height: '36px', borderRadius: '8px',
                 background: `${tool.color}15`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0, color: tool.color,
+                transition: 'transform 0.18s ease',
                 fontFamily: tool.emoji === '词' || tool.emoji === '柔'
                   ? '"Noto Sans JP","Noto Sans SC",serif' : 'inherit',
-              }}>
+              }} className="tool-icon">
                 {tool.emoji}
               </span>
               <div>
@@ -386,7 +478,10 @@ function Dashboard() {
 
         {/* ── Due words ── */}
         {dueCount > 0 && (
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{
+            marginBottom: '1.5rem',
+            animation: ready ? 'fadeUp 0.4s ease 0.5s both' : 'none',
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)' }}>
                 DUE FOR REVIEW
@@ -395,17 +490,24 @@ function Dashboard() {
                 fontSize: '11px', padding: '2px 8px', borderRadius: '99px',
                 background: 'rgba(239,159,39,0.15)', color: '#EF9F27',
                 border: '1px solid rgba(239,159,39,0.3)',
+                animation: ready ? 'fadeIn 0.4s ease 0.55s both' : 'none',
               }}>
                 {dueCount} words
               </span>
             </div>
             <div style={{ background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
               {dueWords.slice(0, 5).map((w, i) => (
-                <div key={w.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
-                  borderBottom: i < Math.min(dueWords.length, 5) - 1 ? '1px solid var(--border)' : 'none',
-                  borderLeft: '3px solid #EF9F27',
-                }}>
+                <div
+                  key={w.id}
+                  className="due-row"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
+                    borderBottom: i < Math.min(dueWords.length, 5) - 1 ? '1px solid var(--border)' : 'none',
+                    borderLeft: '3px solid #EF9F27',
+                    transition: 'background 0.15s ease',
+                    animation: ready ? `fadeRight 0.35s ease ${0.55 + i * 0.06}s both` : 'none',
+                  }}
+                >
                   <span style={{ fontSize: '20px', minWidth: '28px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: 'var(--fg)' }}>
                     {w.kanji}
                   </span>
@@ -418,7 +520,10 @@ function Dashboard() {
         )}
 
         {/* ── Generate vocabulary ── */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{
+          marginBottom: '1.5rem',
+          animation: ready ? 'fadeUp 0.4s ease 0.55s both' : 'none',
+        }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '10px' }}>
             GENERATE VOCABULARY
           </p>
@@ -428,7 +533,7 @@ function Dashboard() {
                 <button key={t} className="btn" style={{ fontSize: '12px', padding: '5px 12px' }}
                   disabled={!!generating} onClick={() => generateWords(t)}>
                   {generating === t
-                    ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Spinner small /> Generating…</span>
+                    ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Spinner size={16} /> Generating…</span>
                     : `+ More ${t}`}
                 </button>
               ))}
@@ -439,7 +544,7 @@ function Dashboard() {
               <button key={i} className="btn" style={{ fontSize: '12px', padding: '5px 12px' }}
                 disabled={!!generating} onClick={() => generateWords(i)}>
                 {generating === i
-                  ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Spinner small /> Generating…</span>
+                  ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Spinner size={16} /> Generating…</span>
                   : `Generate ${i}`}
               </button>
             ))}
@@ -455,7 +560,7 @@ function Dashboard() {
 
         {/* ── Profile ── */}
         {!editingProfile ? (
-          <div>
+          <div style={{ animation: ready ? 'fadeUp 0.4s ease 0.6s both' : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)' }}>YOUR PROFILE</p>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -478,7 +583,7 @@ function Dashboard() {
             <NotificationSettings uid={uid} />
           </div>
         ) : (
-          <div style={{ animation: 'fadeIn 0.2s ease' }}>
+          <div style={{ animation: 'slideDown 0.25s ease both' }}>
             <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '1.25rem' }}>
               EDIT PROFILE
             </p>
@@ -495,6 +600,7 @@ function Dashboard() {
                       background: newNativeLang === l.code ? 'var(--neon-dim)' : 'var(--surface)',
                       color: newNativeLang === l.code ? 'var(--neon)' : 'var(--fg)',
                       cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', textAlign: 'left', width: '100%',
+                      transition: 'all 0.15s ease',
                     }}>
                       <span>{l.flag}</span><span style={{ flex: 1 }}>{l.label}</span>
                       {newNativeLang === l.code && <span>✓</span>}
@@ -517,6 +623,7 @@ function Dashboard() {
                         opacity: (l.code as string) === (newNativeLang as string) ? 0.35 : 1,
                         cursor: (l.code as string) === (newNativeLang as string) ? 'not-allowed' : 'pointer',
                         fontFamily: 'inherit', fontSize: '12px', textAlign: 'left', width: '100%',
+                        transition: 'all 0.15s ease',
                       }}>
                       <span>{l.flag}</span><span style={{ flex: 1 }}>{l.label}</span>
                       {newTargetLang === l.code && <span>✓</span>}
@@ -541,6 +648,7 @@ function Dashboard() {
                   background: newLevel === l ? 'var(--neon-dim)' : 'var(--surface)',
                   color: newLevel === l ? 'var(--neon)' : 'var(--muted)',
                   cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px',
+                  transition: 'all 0.15s ease',
                 }}>
                   {l === 'beginner' ? '🌱 Beginner' : l === 'intermediate' ? '📈 Intermediate' : '🔥 Advanced'}
                 </button>
@@ -557,6 +665,7 @@ function Dashboard() {
                     background: newInterests.includes(i) ? 'var(--neon-dim)' : 'var(--surface)',
                     color: newInterests.includes(i) ? 'var(--neon)' : 'var(--muted)',
                     cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'all 0.15s ease',
                   }}>
                   {i}
                 </button>
@@ -577,36 +686,101 @@ function Dashboard() {
             </div>
           </div>
         )}
-        {/* <TodayPlanCard
-          uid={uid}
-          selectedSubjects={profile.selectedSubjects ?? ['maths']}
-          weakTopics={profile.weakTopics ?? []}
-          targetLang={profile.targetLang}
-          nativeLang={profile.nativeLang}
-        /> */}
       </div>
 
       <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.1)} }
+        /* ── Keyframes ─────────────────────────────── */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeRight {
+          from { opacity: 0; transform: translateX(-8px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes lineGrow {
+          from { transform: scaleY(0); }
+          to   { transform: scaleY(1); }
+        }
+        @keyframes orbDrift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33%       { transform: translate(-12px, 8px) scale(1.1); }
+          66%       { transform: translate(6px, -10px) scale(0.95); }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse  {
+          0%,100% { opacity:1; transform:scale(1); }
+          50%     { opacity:0.6; transform:scale(1.1); }
+        }
         @keyframes glow-pulse {
-          0%,100%{box-shadow:0 0 12px rgba(0,232,122,0.3)}
-          50%{box-shadow:0 0 28px rgba(0,232,122,0.7)}
+          0%,100% { box-shadow:0 0 12px rgba(0,232,122,0.3); }
+          50%     { box-shadow:0 0 28px rgba(0,232,122,0.7); }
+        }
+        @keyframes streakPop {
+          0%   { transform: scale(0.6); opacity: 0; }
+          70%  { transform: scale(1.15); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── Mission row hover ──────────────────────── */
+        .mission-row:hover {
+          background: var(--surface-2) !important;
+          transform: translateX(3px);
+        }
+        .mission-row:hover .mission-arrow {
+          transform: translateX(3px);
+        }
+        .mission-node:hover {
+          transform: scale(1.12) !important;
+        }
+
+        /* ── Study tool hover ───────────────────────── */
+        .study-tool:hover {
+          background: var(--surface-2) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .study-tool:hover .tool-shimmer {
+          opacity: 1 !important;
+        }
+        .study-tool:hover .tool-icon {
+          transform: scale(1.1) rotate(-4deg);
+        }
+        .study-tool:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        /* ── Due row hover ──────────────────────────── */
+        .due-row:hover {
+          background: var(--surface-2);
         }
       `}</style>
     </main>
   );
 }
 
-function Spinner({ small }: { small?: boolean }) {
-  const size = small ? '14px' : '28px';
+// ── Streak counter — pops in and counts up ────────────────────────────────
+function StreakCounter({ value, color, ready }: { value: number; color: string; ready: boolean }) {
+  const displayed = useCountUp(value, 900, 400);
   return (
-    <div style={{
-      width: size, height: size,
-      border: '2px solid var(--surface-2)', borderTopColor: 'var(--neon)',
-      borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-      margin: small ? '0' : '0 auto', flexShrink: 0,
-    }} />
+    <p style={{
+      fontSize: '24px', fontWeight: 700, color, lineHeight: 1,
+      fontVariantNumeric: 'tabular-nums',
+      animation: ready ? 'streakPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.4s both' : 'none',
+    }}>
+      {displayed}
+    </p>
   );
 }
+
