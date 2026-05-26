@@ -106,13 +106,15 @@ export interface Progress {
 
 // ── User profile ──────────────────────────────────────
 export interface UserProfile {
-  uid:        string;
-  email:      string;
-  interests:  string[];
-  nativeLang: NativeLang;
-  targetLang: TargetLang;
-  level:      'beginner' | 'intermediate' | 'advanced';
-  createdAt:  number;
+  uid:          string;
+  email:        string;
+  interests:    string[];
+  nativeLang:   NativeLang;
+  targetLang:   TargetLang;
+  level:        'beginner' | 'intermediate' | 'advanced';
+  createdAt:    number;
+  onboarded?:   boolean;
+  onboardedAt?: string;
 }
 
 // ── SRS rating ────────────────────────────────────────

@@ -104,12 +104,6 @@ export async function getDueLessonReviews(uid: string): Promise<LessonReview[]> 
   return snap.docs.map(d => d.data() as LessonReview);
 }
 
-// ── Get all scheduled reviews (due + upcoming) ────────
-export async function getAllLessonReviews(uid: string): Promise<LessonReview[]> {
-  const snap = await getDocs(collection(db, 'lesson_reviews', uid, 'reviews'));
-  return snap.docs.map(d => d.data() as LessonReview);
-}
-
 // ── Get days until next review ─────────────────────────
 export function daysUntilReview(nextReview: string): number {
   const today = new Date(todayStr());
