@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -364,12 +365,7 @@ function InterrogationShell({ children, bg, border }: {
         {children}
       </div>
       <style>{`
-        @keyframes spin { to{transform:rotate(360deg)} }
       `}</style>
     </main>
   );
-}
-
-function Spinner() {
-  return <div style={{ width: '24px', height: '24px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#E24B4A', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto' }} />;
 }

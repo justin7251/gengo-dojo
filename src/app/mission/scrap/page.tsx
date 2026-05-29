@@ -1,6 +1,6 @@
 'use client';
-
-import { useEffect, useState, useRef } from 'react';
+import { Spinner } from '@/components/Spinner';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
@@ -9,71 +9,55 @@ import { Word, Progress, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types'
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function ScrapPage() {
-  return <AuthGuard><ScrapMission /></AuthGuard>;
-}
+export default function ScrapPage() { return <AuthGuard><ScrapMission /></AuthGuard>; }
 
 type Phase = 'countdown' | 'playing' | 'done';
 
 function speak(text: string, targetLang: TargetLang) {
   if (typeof window === 'undefined') return;
   window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang  = VOICE_LANG[targetLang] ?? 'ja-JP';
-  utter.rate  = 1.0;
-  const voices   = window.speechSynthesis.getVoices();
-  const langCode = VOICE_LANG[targetLang].split('-')[0];
-  const native   = voices.find(v => v.lang.startsWith(langCode));
-  if (native) utter.voice = native;
-  window.speechSynthesis.speak(utter);
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = VOICE_LANG[targetLang] ?? 'ja-JP'; u.rate = 1.0;
+  const v = window.speechSynthesis.getVoices().find(v => v.lang.startsWith(VOICE_LANG[targetLang].split('-')[0]));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
 }
 
 function ScrapMission() {
   const router = useRouter();
-
-  const [uid, setUid]             = useState('');
+  const [uid, setUid]               = useState('');
   const [targetLang, setTargetLang] = useState<TargetLang>('ja');
   const [nativeLang, setNativeLang] = useState<NativeLang>('en');
-  const [words, setWords]         = useState<Word[]>([]);
-  const [progress, setProgress]   = useState<Record<string, Progress>>({});
-  const [queue, setQueue]         = useState<Word[]>([]);
-  const [phase, setPhase]         = useState<Phase>('countdown');
-  const [countdown, setCountdown] = useState(3);
-  const [timeLeft, setTimeLeft]   = useState(30);
-  const [idx, setIdx]             = useState(0);
-  const [choices, setChoices]     = useState<string[]>([]);
-  const [selected, setSelected]   = useState('');
-  const [answered, setAnswered]   = useState(false);
-  const [stats, setStats]         = useState({ correct: 0, wrong: 0 });
-  const [loading, setLoading]     = useState(true);
-  const timerRef                  = useRef<NodeJS.Timeout | null>(null);
+  const [words, setWords]           = useState<Word[]>([]);
+  const [progress, setProgress]     = useState<Record<string, Progress>>({});
+  const [queue, setQueue]           = useState<Word[]>([]);
+  const [phase, setPhase]           = useState<Phase>('countdown');
+  const [countdown, setCountdown]   = useState(3);
+  const [timeLeft, setTimeLeft]     = useState(30);
+  const [idx, setIdx]               = useState(0);
+  const [choices, setChoices]       = useState<string[]>([]);
+  const [selected, setSelected]     = useState('');
+  const [answered, setAnswered]     = useState(false);
+  const [stats, setStats]           = useState({ correct: 0, wrong: 0 });
+  const [combo, setCombo]           = useState(0);
+  const [score, setScore]           = useState(0);
+  const [xpPops, setXpPops]         = useState<{ id: number; text: string }[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const timerRef                    = useRef<NodeJS.Timeout | null>(null);
+  const popId                       = useRef(0);
 
-  useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
-
+  useEffect(() => { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
   useEffect(() => {
     return onAuth(async (user) => {
-      if (!user) return;
-      setUid(user.uid);
-      const profile = await getUserProfile(user.uid);
-      if (!profile) return;
-      setTargetLang(profile.targetLang);
-      setNativeLang(profile.nativeLang);
-      const [ws, prog] = await Promise.all([
-        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
-        getProgress(user.uid, profile.targetLang, profile.nativeLang),
-      ]);
-      setWords(ws);
-      setProgress(prog);
-      const due  = ws.filter(w => prog[w.id] && isDue(prog[w.id]));
+      if (!user) return; setUid(user.uid);
+      const p = await getUserProfile(user.uid); if (!p) return;
+      setTargetLang(p.targetLang); setNativeLang(p.nativeLang);
+      const [ws, prog] = await Promise.all([getUserWords(user.uid, p.targetLang, p.nativeLang), getProgress(user.uid, p.targetLang, p.nativeLang)]);
+      setWords(ws); setProgress(prog);
+      const due = ws.filter(w => prog[w.id] && isDue(prog[w.id]));
       const rest = ws.filter(w => !prog[w.id] || !isDue(prog[w.id]));
-      const q    = [...due, ...rest.sort(() => Math.random() - 0.5)].slice(0, 5);
-      setQueue(q);
-      buildChoices(q, 0, ws);
-      setLoading(false);
+      const q = [...due, ...rest.sort(() => Math.random() - 0.5)].slice(0, 5);
+      setQueue(q); buildChoices(q, 0, ws); setLoading(false);
     });
   }, []);
 
@@ -96,21 +80,18 @@ function ScrapMission() {
     }, 1000);
   }
 
-  async function endSession() {
+  const endSession = useCallback(async () => {
     setPhase('done');
     try {
       const ag = await getAgentProfile(uid);
       if (ag) {
-        const params = new URLSearchParams({
-          correct: String(stats.correct), wrong: String(stats.wrong), mode: 'scrap',
-          prevSuspicion: String(ag.suspicionLevel), prevChapter: String(ag.chapter), prevStreak: String(ag.streakDays),
-        });
+        const params = new URLSearchParams({ correct: String(stats.correct), wrong: String(stats.wrong), mode: 'scrap', prevSuspicion: String(ag.suspicionLevel), prevChapter: String(ag.chapter), prevStreak: String(ag.streakDays) });
         const debrief = await updateAgentAfterMission(uid, stats.correct, stats.wrong, 'scrap');
         if (debrief.newFragment) params.set('fragment', debrief.newFragment);
         router.push(`/debrief?${params.toString()}`);
       }
     } catch { /* ignore */ }
-  }
+  }, [uid, stats, router]);
 
   async function handleAnswer(choice: string) {
     if (answered || phase !== 'playing') return;
@@ -119,8 +100,17 @@ function ScrapMission() {
     const isCorrect = choice === word.meaning;
     const newStats = { correct: isCorrect ? stats.correct + 1 : stats.correct, wrong: !isCorrect ? stats.wrong + 1 : stats.wrong };
     setStats(newStats);
+    if (isCorrect) {
+      const newCombo = combo + 1; setCombo(newCombo);
+      const xp = newCombo >= 5 ? 30 : newCombo >= 3 ? 20 : 10;
+      setScore(s => s + xp);
+      const id = popId.current++;
+      setXpPops(ps => [...ps, { id, text: newCombo >= 3 ? `+${xp} 🔥x${newCombo}` : `+${xp}` }]);
+      setTimeout(() => setXpPops(ps => ps.filter(p => p.id !== id)), 800);
+    } else { setCombo(0); }
     const prev = progress[word.id];
     if (prev) rateWord(uid, word.id, isCorrect ? 'good' : 'wrong', prev, targetLang, nativeLang);
+    speak(word.kanji, targetLang);
     setTimeout(() => {
       const next = idx + 1;
       if (next >= queue.length) { if (timerRef.current) clearInterval(timerRef.current); endSession(); return; }
@@ -128,129 +118,125 @@ function ScrapMission() {
     }, 500);
   }
 
-  if (loading) return <Screen><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div></Screen>;
+  if (loading) return <Shell><div style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center' }}><Spinner size={40} color="var(--orange)" /></div></Shell>;
 
   // Countdown
   if (phase === 'countdown') return (
-    <Screen>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <p style={{ fontSize: '12px', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>⚡ SCRAP MODE · 30 SECONDS</p>
-        <div style={{ fontSize: '120px', fontWeight: 700, lineHeight: 1, color: countdown === 0 ? '#00e87a' : '#EF9F27', fontFamily: 'var(--font-mono)', textShadow: `0 0 40px ${countdown === 0 ? 'rgba(0,232,122,0.6)' : 'rgba(239,159,39,0.6)'}`, transition: 'color 0.2s' }}>
-          {countdown === 0 ? 'GO' : countdown}
-        </div>
+    <Shell>
+      <button className="btn" style={{ alignSelf:'flex-start', marginBottom:'auto' }} onClick={() => router.push('/mission')}>← Back</button>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+        <p style={{ fontSize:'12px', fontWeight:800, letterSpacing:'0.2em', color:'var(--muted)', marginBottom:'1.5rem', textTransform:'uppercase' }}>⚡ Scrap Mode · 30 Seconds</p>
+        <div style={{
+          fontFamily:'var(--font-display)', fontSize:'140px', fontWeight:900, lineHeight:1,
+          color: countdown === 0 ? 'var(--green)' : 'var(--orange)',
+          textShadow: countdown === 0 ? '0 0 40px rgba(88,204,2,0.6)' : '0 0 40px rgba(255,150,0,0.6)',
+          animation:'bounceIn 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+          transition:'color 0.2s',
+        }}>{countdown === 0 ? 'GO!' : countdown}</div>
       </div>
-    </Screen>
+    </Shell>
   );
 
-  // Done
   if (phase === 'done') {
     const total = stats.correct + stats.wrong;
     const pct   = total ? Math.round(stats.correct / total * 100) : 0;
     return (
-      <Screen>
-        <TopBar onBack={() => router.push('/mission')} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: '64px', marginBottom: '1rem' }}>{pct >= 80 ? '⚡' : pct >= 50 ? '💪' : '💀'}</div>
-          <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Mission complete</h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>{stats.correct} correct · {stats.wrong} wrong · {pct}%</p>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => { setPhase('countdown'); setCountdown(3); setTimeLeft(30); setIdx(0); setStats({ correct: 0, wrong: 0 }); setAnswered(false); setSelected(''); buildChoices(queue, 0, words); }} style={WHITE_BTN}>Again</button>
-            <button onClick={() => router.push('/mission')} style={GHOST_BTN}>Debrief</button>
+      <Shell>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+          <div style={{ fontSize:'80px', marginBottom:'1rem', animation:'bounceIn 0.5s ease' }}>{pct >= 80 ? '⚡' : pct >= 50 ? '💪' : '📖'}</div>
+          <h2 style={{ fontFamily:'var(--font-display)', fontSize:'28px', fontWeight:900, color:'var(--fg)', marginBottom:'4px' }}>Time's Up!</h2>
+          <p style={{ fontSize:'15px', color:'var(--muted)', fontWeight:600, marginBottom:'1.5rem' }}>{stats.correct} correct · {stats.wrong} wrong · {pct}%</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginBottom:'1.5rem', width:'100%', maxWidth:'280px' }}>
+            <ScoreCard emoji="⭐" label="Score" value={String(score)} accent="var(--yellow)" />
+            <ScoreCard emoji="🔥" label="Accuracy" value={`${pct}%`} accent="var(--orange)" />
+          </div>
+          <div style={{ display:'flex', gap:'10px' }}>
+            <button className="btn btn-orange" onClick={() => { setPhase('countdown'); setCountdown(3); setTimeLeft(30); setIdx(0); setStats({ correct:0, wrong:0 }); setCombo(0); setScore(0); setAnswered(false); setSelected(''); buildChoices(queue, 0, words); }}>
+              Again ⚡
+            </button>
+            <button className="btn" onClick={() => router.push('/mission')}>Mission Hub</button>
           </div>
         </div>
-      </Screen>
+        <style>{`@keyframes bounceIn{0%{opacity:0;transform:scale(0.6)}60%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}`}</style>
+      </Shell>
     );
   }
 
-  const current    = queue[idx];
-  const timerPct   = (timeLeft / 30) * 100;
-  const timerColor = timeLeft > 15 ? '#00e87a' : timeLeft > 7 ? '#EF9F27' : '#E24B4A';
+  const current  = queue[idx];
+  const timerPct = (timeLeft / 30) * 100;
 
   return (
-    <Screen>
-      <TopBar onBack={() => { if (timerRef.current) clearInterval(timerRef.current); router.push('/mission'); }} />
-
-      {/* Timer row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-        <span style={{ fontSize: '36px', fontWeight: 700, color: timerColor, minWidth: '50px', fontFamily: 'var(--font-mono)', textShadow: `0 0 16px ${timerColor}80`, transition: 'color 0.3s' }}>
-          {timeLeft}
-        </span>
-        <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ height: '6px', background: timerColor, borderRadius: '3px', width: `${timerPct}%`, transition: 'width 1s linear, background 0.3s', boxShadow: `0 0 10px ${timerColor}` }} />
+    <Shell>
+      {/* Top: timer + score */}
+      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'1rem' }}>
+        <span style={{ fontFamily:'var(--font-display)', fontSize:'38px', fontWeight:900, color: timeLeft > 15 ? 'var(--green)' : timeLeft > 8 ? 'var(--orange)' : 'var(--red)', minWidth:'52px', transition:'color 0.3s' }}>{timeLeft}</span>
+        <div style={{ flex:1 }}>
+          <div className="progress-track" style={{ height:'10px' }}>
+            <div className="progress-fill" style={{ width:`${timerPct}%`, background: timerPct > 50 ? 'linear-gradient(90deg,var(--green),#7ee800)' : timerPct > 25 ? 'linear-gradient(90deg,var(--orange),#ffc800)' : 'linear-gradient(90deg,var(--red),#ff8080)', transition:'width 1s linear, background 0.3s' }} />
+          </div>
         </div>
-        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)' }}>{idx + 1}/{queue.length}</span>
+        <div style={{ textAlign:'right' }}>
+          <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', lineHeight:1 }}>{score}</p>
+          {combo >= 2 && <p style={{ fontSize:'11px', fontWeight:800, color:'var(--orange)' }}>🔥 x{combo}</p>}
+        </div>
+      </div>
+
+      {/* XP pop */}
+      <div style={{ position:'relative', height:0, overflow:'visible' }}>
+        {xpPops.map(p => (
+          <div key={p.id} style={{ position:'absolute', top:0, left:'50%', transform:'translateX(-50%)', fontFamily:'var(--font-display)', fontSize:'15px', fontWeight:800, color:'var(--green-dark)', pointerEvents:'none', zIndex:10, animation:'xpPop 0.8s ease forwards', whiteSpace:'nowrap' }}>{p.text}</div>
+        ))}
       </div>
 
       {/* Word card */}
-      <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '20px', padding: '2rem', textAlign: 'center', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.08)', position: 'relative', overflow: 'hidden' }}>
-        {/* Ghost background */}
-        <div style={{ position: 'absolute', fontSize: '160px', lineHeight: 1, fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: 'rgba(255,255,255,0.04)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', userSelect: 'none' }}>
-          {current?.kanji}
-        </div>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '10px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: '#fff', textShadow: '0 0 30px rgba(255,255,255,0.15)' }}>
-            {current?.kanji}
-          </div>
-          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)' }}>{current?.reading}</p>
-        </div>
+      <div style={{ background:'#fff', border:`2.5px solid ${answered && selected !== current?.meaning ? 'var(--red)' : answered ? 'var(--green)' : 'var(--border-dark)'}`, borderRadius:'24px', boxShadow: answered && selected !== current?.meaning ? '0 6px 0 var(--red-dark)' : answered ? '0 6px 0 var(--green-dark)' : '0 8px 0 var(--border-dark)', padding:'2rem', textAlign:'center', marginBottom:'1.25rem', transition:'border-color 0.15s, box-shadow 0.15s', animation: answered && selected !== current?.meaning ? 'wrongShake 0.4s ease' : 'fadeIn 0.2s ease' }}>
+        <p style={{ fontSize:'11px', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--muted)', marginBottom:'1rem' }}>{idx+1}/{queue.length} · {current?.topic}</p>
+        <div style={{ fontSize:'76px', lineHeight:1, fontFamily:'"Noto Sans JP","Noto Sans SC",serif', color:'var(--fg)', marginBottom:'8px' }}>{current?.kanji}</div>
+        <p style={{ fontSize:'16px', color:'var(--muted-bright)', fontWeight:600 }}>{current?.reading}</p>
       </div>
 
-      {/* 2x2 grid choices */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      {/* 2×2 choices */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
         {choices.map(choice => {
           const isCorrect  = choice === current?.meaning;
           const isSelected = choice === selected;
-          let bg = 'rgba(255,255,255,0.06)', borderColor = 'rgba(255,255,255,0.12)', color = 'rgba(255,255,255,0.85)';
+          let bg = '#fff', border = 'var(--border-dark)', shadow = 'var(--border-dark)', color = 'var(--fg)', opacity = 1;
           if (answered) {
-            if (isCorrect)       { bg = 'rgba(0,232,122,0.15)'; borderColor = 'rgba(0,232,122,0.5)'; color = '#00e87a'; }
-            else if (isSelected) { bg = 'rgba(226,75,74,0.15)'; borderColor = 'rgba(226,75,74,0.5)'; color = '#ff8080'; }
-            else { bg = 'transparent'; color = 'rgba(255,255,255,0.2)'; }
+            if (isCorrect)      { bg = 'var(--green-light)'; border = 'var(--green)'; shadow = 'var(--green-dark)'; color = '#2a7a00'; }
+            else if (isSelected){ bg = 'var(--red-light)';   border = 'var(--red)';   shadow = 'var(--red-dark)';   color = 'var(--red-dark)'; }
+            else                { opacity = 0.35; }
           }
           return (
-            <button key={choice} onClick={() => handleAnswer(choice)} disabled={answered} style={{
-              padding: '14px 10px', borderWidth: '1px', borderStyle: 'solid', borderColor, borderRadius: '12px',
-              background: bg, color, fontSize: '13px', cursor: answered ? 'default' : 'pointer',
-              fontFamily: 'var(--font-ui)', transition: 'all 0.1s', lineHeight: 1.3,
-            }}>
-              {choice}
+            <button key={choice} onClick={() => handleAnswer(choice)} disabled={answered} style={{ padding:'13px 10px', borderRadius:'14px', border:`2.5px solid ${border}`, background:bg, color, fontSize:'13px', fontWeight:700, cursor:answered ? 'default' : 'pointer', fontFamily:'var(--font-ui)', boxShadow:`0 4px 0 ${shadow}`, opacity, lineHeight:1.3, transition:'all 0.1s ease' }}>
+              {answered && isCorrect && '✅ '}{answered && isSelected && !isCorrect && '❌ '}{choice}
             </button>
           );
         })}
       </div>
-
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
-    </Screen>
+      <style>{`
+        @keyframes xpPop{0%{opacity:0;transform:translateX(-50%) translateY(0) scale(0.6)}40%{opacity:1;transform:translateX(-50%) translateY(-22px) scale(1.2)}100%{opacity:0;transform:translateX(-50%) translateY(-42px) scale(1)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes wrongShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+        @keyframes bounceIn{0%{opacity:0;transform:scale(0.6)}60%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+      `}</style>
+    </Shell>
   );
 }
 
-function Screen({ children }: { children: React.ReactNode }) {
+function ScoreCard({ emoji, label, value, accent = 'var(--blue)' }: { emoji:string;label:string;value:string;accent?:string }) {
   return (
-    <main style={{
-      minHeight: '100vh',
-      background: '#0a1200',
-      backgroundImage: 'radial-gradient(ellipse at top, #1a2e00 0%, #0a1200 60%, #050800 100%)',
-      display: 'flex', flexDirection: 'column',
-      padding: '1.5rem 1.25rem 2rem', fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(0,232,122,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,0.04) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {children}
-      </div>
-    </main>
-  );
-}
-
-function TopBar({ onBack }: { onBack: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>⚡ Scrap</span>
-      <div style={{ width: '60px' }} />
+    <div style={{ background:'#fff', border:`2.5px solid ${accent}55`, borderRadius:'14px', padding:'12px 8px', textAlign:'center', boxShadow:`0 4px 0 ${accent}55` }}>
+      <div style={{ fontSize:'20px', marginBottom:'4px' }}>{emoji}</div>
+      <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', lineHeight:1 }}>{value}</p>
+      <p style={{ fontSize:'10px', fontWeight:700, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'3px' }}>{label}</p>
     </div>
   );
 }
-
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#0a1200', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column', padding:'1.5rem 1.25rem 3rem', fontFamily:'var(--font-ui)', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:'-80px', right:'-80px', width:'280px', height:'280px', borderRadius:'50%', background:'rgba(255,150,0,0.08)', filter:'blur(50px)', pointerEvents:'none' }} />
+      <div style={{ maxWidth:'480px', margin:'0 auto', width:'100%', flex:1, display:'flex', flexDirection:'column', position:'relative', zIndex:1 }}>{children}</div>
+    </main>
+  );
+}

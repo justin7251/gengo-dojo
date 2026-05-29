@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -361,7 +362,6 @@ function Screen({ children }: { children: React.ReactNode }) {
       </div>
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
       `}</style>
     </main>
   );
@@ -389,6 +389,3 @@ const GHOST_BTN: React.CSSProperties = {
   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
 };
 
-function Spinner() {
-  return <div style={{ width: '28px', height: '28px', border: `2px solid rgba(212,83,126,0.2)`, borderTopColor: ACCENT, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
-}

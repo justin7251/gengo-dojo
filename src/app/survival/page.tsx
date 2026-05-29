@@ -1,5 +1,5 @@
 'use client';
-
+import { Spinner } from '@/components/Spinner';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
@@ -8,9 +8,7 @@ import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/li
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function SurvivalPage() {
-  return <AuthGuard><Survival /></AuthGuard>;
-}
+export default function SurvivalPage() { return <AuthGuard><Survival /></AuthGuard>; }
 
 const MAX_LIVES  = 3;
 const TIME_PER_Q = 8;
@@ -19,14 +17,11 @@ const MAX_WORDS  = 15;
 function speak(text: string, targetLang: TargetLang) {
   if (typeof window === 'undefined') return;
   window.speechSynthesis.cancel();
-  const utter    = new SpeechSynthesisUtterance(text);
-  utter.lang     = VOICE_LANG[targetLang] ?? 'ja-JP';
-  utter.rate     = 0.85;
-  const voices   = window.speechSynthesis.getVoices();
-  const langCode = VOICE_LANG[targetLang].split('-')[0];
-  const native   = voices.find(v => v.lang.startsWith(langCode));
-  if (native) utter.voice = native;
-  window.speechSynthesis.speak(utter);
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = VOICE_LANG[targetLang] ?? 'ja-JP'; u.rate = 0.9;
+  const v = window.speechSynthesis.getVoices().find(v => v.lang.startsWith(VOICE_LANG[targetLang].split('-')[0]));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
 }
 
 type Phase    = 'intro' | 'playing' | 'dead' | 'cleared';
@@ -39,17 +34,12 @@ function buildQueue(words: Word[], progress: Record<string, Progress>): Word[] {
 }
 
 function buildQuestion(word: Word, allWords: Word[]): Question {
-  const distractors = allWords
-    .filter(w => w.id !== word.id)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3)
-    .map(w => w.meaning);
+  const distractors = allWords.filter(w => w.id !== word.id).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.meaning);
   return { word, choices: [...distractors, word.meaning].sort(() => Math.random() - 0.5), correct: word.meaning };
 }
 
 function Survival() {
   const router = useRouter();
-
   const [uid, setUid]               = useState('');
   const [targetLang, setTargetLang] = useState<TargetLang>('ja');
   const [nativeLang, setNativeLang] = useState<NativeLang>('en');
@@ -57,359 +47,283 @@ function Survival() {
   const [progress, setProgress]     = useState<Record<string, Progress>>({});
   const [queue, setQueue]           = useState<Word[]>([]);
   const [phase, setPhase]           = useState<Phase>('intro');
-  const [idx, setIdx]               = useState(0);
+  const [qIdx, setQIdx]             = useState(0);
   const [question, setQuestion]     = useState<Question | null>(null);
-  const [lives, setLives]           = useState(MAX_LIVES);
-  const [timeLeft, setTimeLeft]     = useState(TIME_PER_Q);
   const [selected, setSelected]     = useState('');
   const [answered, setAnswered]     = useState(false);
+  const [lives, setLives]           = useState(MAX_LIVES);
+  const [timeLeft, setTimeLeft]     = useState(TIME_PER_Q);
+  const [score, setScore]           = useState(0);
+  const [combo, setCombo]           = useState(0);
+  const [maxCombo, setMaxCombo]     = useState(0);
+  const [xpPops, setXpPops]         = useState<{ id: number; x: number; text: string }[]>();
+  const [shakingCard, setShakingCard] = useState(false);
   const [loading, setLoading]       = useState(true);
-  const [stats, setStats]           = useState({ correct: 0, wrong: 0 });
-  const [wrongWords, setWrongWords] = useState<Word[]>([]);
   const timerRef                    = useRef<NodeJS.Timeout | null>(null);
-  const advancingRef                = useRef(false);
-  const livesRef                    = useRef(MAX_LIVES);
+  const popId                       = useRef(0);
 
-  useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
-
-  useEffect(() => { livesRef.current = lives; }, [lives]);
-
+  useEffect(() => { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices(); }, []);
   useEffect(() => {
     return onAuth(async (user) => {
-      if (!user) return;
-      setUid(user.uid);
-      const profile = await getUserProfile(user.uid);
-      if (!profile) return;
-      setTargetLang(profile.targetLang);
-      setNativeLang(profile.nativeLang);
-      const [words, prog] = await Promise.all([
-        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
-        getProgress(user.uid, profile.targetLang, profile.nativeLang),
-      ]);
-      setAllWords(words);
-      setProgress(prog);
-      setLoading(false);
+      if (!user) return; setUid(user.uid);
+      const p = await getUserProfile(user.uid); if (!p) return;
+      setTargetLang(p.targetLang); setNativeLang(p.nativeLang);
+      const [ws, prog] = await Promise.all([getUserWords(user.uid, p.targetLang, p.nativeLang), getProgress(user.uid, p.targetLang, p.nativeLang)]);
+      setAllWords(ws); setProgress(prog); setLoading(false);
     });
   }, []);
-
-  function stopTimer() { if (timerRef.current) clearInterval(timerRef.current); }
-
-  const advanceToNext = useCallback((currentIdx: number, currentQueue: Word[], currentWrongWords: Word[]) => {
-    advancingRef.current = false;
-    const next = currentIdx + 1;
-    if (next >= currentQueue.length) { setPhase('cleared'); return; }
-    const nextWord = currentQueue[next];
-    setIdx(next);
-    setQuestion(buildQuestion(nextWord, allWords));
-    setAnswered(false);
-    setSelected('');
-    speak(nextWord.kanji, targetLang);
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(TIME_PER_Q);
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => { if (t <= 1) { if (timerRef.current) clearInterval(timerRef.current); return 0; } return t - 1; });
-    }, 1000);
-  }, [allWords, targetLang]);
 
   function startGame() {
     const q = buildQueue(allWords, progress);
-    setQueue(q); setIdx(0); setLives(MAX_LIVES); livesRef.current = MAX_LIVES;
-    setStats({ correct: 0, wrong: 0 }); setWrongWords([]);
-    setPhase('playing');
-    setQuestion(buildQuestion(q[0], allWords));
-    setAnswered(false); setSelected('');
-    speak(q[0].kanji, targetLang);
+    setQueue(q); setQIdx(0); setLives(MAX_LIVES); setScore(0); setCombo(0); setMaxCombo(0);
+    setQuestion(buildQuestion(q[0], allWords)); setAnswered(false); setSelected('');
+    setPhase('playing'); startTimer(TIME_PER_Q);
+  }
+
+  function startTimer(t: number) {
+    setTimeLeft(t);
     if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(TIME_PER_Q);
     timerRef.current = setInterval(() => {
-      setTimeLeft(t => { if (t <= 1) { if (timerRef.current) clearInterval(timerRef.current); return 0; } return t - 1; });
+      setTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(timerRef.current!); handleTimeout(); return 0; }
+        return prev - 1;
+      });
     }, 1000);
   }
 
-  useEffect(() => {
-    if (phase !== 'playing' || timeLeft !== 0 || answered || advancingRef.current) return;
-    advancingRef.current = true;
+  const handleTimeout = useCallback(() => {
     setAnswered(true); setSelected('__timeout__');
-    const currentWord = queue[idx];
-    const newLives = livesRef.current - 1;
-    setLives(newLives); livesRef.current = newLives;
-    setStats(s => ({ ...s, wrong: s.wrong + 1 }));
-    setWrongWords(w => [...w, currentWord]);
-    const prev = progress[currentWord?.id];
-    if (prev && uid) rateWord(uid, currentWord.id, 'wrong', prev, targetLang, nativeLang);
-    if (newLives <= 0) { setTimeout(() => setPhase('dead'), 1400); }
-    else { setTimeout(() => { setWrongWords(ww => { advanceToNext(idx, queue, ww); return ww; }); }, 1400); }
-  }, [timeLeft, phase, answered]);
+    setCombo(0);
+    setLives(prev => {
+      const next = prev - 1;
+      if (next <= 0) { setTimeout(() => setPhase('dead'), 900); }
+      return next;
+    });
+    setShakingCard(true); setTimeout(() => setShakingCard(false), 500);
+    setTimeout(advance, 1200);
+  }, []);
 
   async function handleAnswer(choice: string) {
-    if (answered || advancingRef.current || phase !== 'playing') return;
-    stopTimer(); advancingRef.current = true;
-    setAnswered(true); setSelected(choice);
-    const isCorrect = question && choice === question.correct;
-    const currentWord = queue[idx];
+    if (answered || phase !== 'playing') return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setSelected(choice); setAnswered(true);
+    const isCorrect = choice === question!.correct;
+    const word = question!.word;
+    const prev = progress[word.id];
+    if (prev) rateWord(uid, word.id, isCorrect ? 'good' : 'wrong', prev, targetLang, nativeLang);
+    speak(word.kanji, targetLang);
+
     if (isCorrect) {
-      setStats(s => ({ ...s, correct: s.correct + 1 }));
-      setTimeout(() => advanceToNext(idx, queue, wrongWords), 1200);
+      const newCombo = combo + 1;
+      setCombo(newCombo); setMaxCombo(m => Math.max(m, newCombo));
+      const xp = newCombo >= 5 ? 30 : newCombo >= 3 ? 20 : 10;
+      setScore(s => s + xp);
+      // XP pop
+      const id = popId.current++;
+      setXpPops(ps => [...(ps ?? []), { id, x: Math.random() * 60 + 20, text: newCombo >= 3 ? `+${xp} 🔥x${newCombo}` : `+${xp}` }]);
+      setTimeout(() => setXpPops(ps => ps?.filter(p => p.id !== id)), 900);
     } else {
-      const newLives = livesRef.current - 1;
-      setLives(newLives); livesRef.current = newLives;
-      setStats(s => ({ ...s, wrong: s.wrong + 1 }));
-      setWrongWords(ww => {
-        const updated = [...ww, currentWord];
-        const prev = progress[currentWord?.id];
-        if (prev && uid) rateWord(uid, currentWord.id, 'wrong', prev, targetLang, nativeLang);
-        if (newLives <= 0) { setTimeout(() => setPhase('dead'), 1400); }
-        else { setTimeout(() => advanceToNext(idx, queue, updated), 1400); }
-        return updated;
+      setCombo(0);
+      setLives(prev => {
+        const next = prev - 1;
+        if (next <= 0) { setTimeout(() => setPhase('dead'), 900); }
+        return next;
       });
+      setShakingCard(true); setTimeout(() => setShakingCard(false), 500);
     }
+    setTimeout(advance, isCorrect ? 700 : 1000);
   }
 
-  useEffect(() => {
-    if (phase !== 'cleared') return;
-    queue.forEach(w => {
-      const prev = progress[w.id];
-      if (prev && uid && !wrongWords.find(ww => ww.id === w.id)) {
-        rateWord(uid, w.id, 'easy', prev, targetLang, nativeLang);
-      }
-    });
-  }, [phase]);
-
-  const pct       = queue.length ? Math.round((idx / queue.length) * 100) : 0;
-  const timerPct  = (timeLeft / TIME_PER_Q) * 100;
-  const timerColor = timeLeft > 5 ? '#00e87a' : timeLeft > 2 ? '#EF9F27' : '#E24B4A';
-
-  if (loading) return <Screen><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div></Screen>;
-
-  if (allWords.length < 4) return (
-    <Screen>
-      <TopBar onBack={() => router.push('/dashboard')} />
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <p style={{ fontSize: '40px', marginBottom: '1rem' }}>📚</p>
-        <p style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>Not enough words</p>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>You need at least 4 words.</p>
-        <button onClick={() => router.push('/dashboard')} style={WHITE_BTN}>Go to dashboard</button>
-      </div>
-    </Screen>
-  );
-
-  if (phase === 'intro') {
-    const dueCount = allWords.filter(w => progress[w.id] && isDue(progress[w.id])).length;
-    return (
-      <Screen>
-        <TopBar onBack={() => router.push('/dashboard')} />
-        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ fontSize: '80px', marginBottom: '1rem', filter: 'drop-shadow(0 0 20px rgba(226,75,74,0.5))' }}>💀</div>
-          <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Survival Mode</h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem', lineHeight: 1.7 }}>
-            Answer before the timer runs out.<br />Three wrong answers and it's over.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '2rem', width: '100%' }}>
-            {[
-              { label: 'Words',   value: Math.min(allWords.length, MAX_WORDS) },
-              { label: 'Due',     value: dueCount },
-              { label: 'Seconds', value: TIME_PER_Q },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(226,75,74,0.2)' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#fff' }}>{s.value}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px', letterSpacing: '0.06em' }}>{s.label.toUpperCase()}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ fontSize: '32px', marginBottom: '1.5rem', letterSpacing: '8px', filter: 'drop-shadow(0 0 8px rgba(226,75,74,0.5))' }}>
-            {'❤️'.repeat(MAX_LIVES)}
-          </div>
-
-          <div style={{ background: 'rgba(226,75,74,0.12)', border: '1px solid rgba(226,75,74,0.3)', borderRadius: '12px', padding: '12px 16px', fontSize: '13px', color: 'rgba(255,150,150,0.8)', marginBottom: '2rem', lineHeight: 1.6, width: '100%' }}>
-            ⚠️ Wrong answers immediately reset that word's SRS to 1 day. There is no undo.
-          </div>
-
-          <button onClick={startGame} style={{ ...WHITE_BTN, width: '100%', padding: '16px', fontSize: '16px' }}>
-            Enter survival →
-          </button>
-        </div>
-      </Screen>
-    );
+  function advance() {
+    const nextIdx = qIdx + 1;
+    if (nextIdx >= queue.length) { setPhase('cleared'); return; }
+    setQIdx(nextIdx); setQuestion(buildQuestion(queue[nextIdx], allWords));
+    setSelected(''); setAnswered(false); startTimer(TIME_PER_Q);
   }
 
-  if (phase === 'dead') return (
-    <Screen>
-      <TopBar onBack={() => router.push('/dashboard')} />
-      <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: '80px', marginBottom: '1rem' }}>💀</div>
-        <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>You died</h2>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>
-          {stats.correct} survived · {stats.wrong} killed you
+  const canPlay = allWords.length >= 4;
+  const timerPct = (timeLeft / TIME_PER_Q) * 100;
+  const timerColor = timeLeft > 5 ? 'var(--green)' : timeLeft > 2 ? 'var(--orange)' : 'var(--red)';
+
+  if (loading) return <Shell><div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}><Spinner size={40} /></div></Shell>;
+
+  // ── INTRO ──────────────────────────────────────────────
+  if (phase === 'intro') return (
+    <Shell>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+        <div style={{ fontSize:'80px', marginBottom:'1rem', animation:'float 2s ease-in-out infinite' }}>💀</div>
+        <h1 style={{ fontFamily:'var(--font-display)', fontSize:'32px', fontWeight:900, color:'var(--fg)', marginBottom:'8px' }}>Survival Mode</h1>
+        <p style={{ fontSize:'15px', color:'var(--muted)', fontWeight:600, maxWidth:'280px', lineHeight:1.6, marginBottom:'2rem' }}>
+          3 lives. {TIME_PER_Q} seconds per question. Build combos for bonus XP.
         </p>
-        {wrongWords.length > 0 && (
-          <div style={{ width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(226,75,74,0.2)', marginBottom: '2rem' }}>
-            <div style={{ padding: '8px 14px', background: 'rgba(226,75,74,0.15)', borderBottom: '1px solid rgba(226,75,74,0.2)', fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(255,150,150,0.8)' }}>
-              WORDS THAT KILLED YOU — RESET TO 1 DAY
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'2rem', width:'100%', maxWidth:'340px' }}>
+          {[
+            { emoji:'❤️', label:'3 Lives',        sub:'Lose one per miss' },
+            { emoji:'⏱',  label:'8 Sec/Q',        sub:'Timer pressure' },
+            { emoji:'🔥', label:'Combo Bonus',    sub:'3x = +20, 5x = +30' },
+          ].map(s => (
+            <div key={s.label} style={{ background:'#fff', border:'2.5px solid var(--border-dark)', borderRadius:'14px', padding:'12px 8px', textAlign:'center', boxShadow:'0 4px 0 var(--border-dark)' }}>
+              <div style={{ fontSize:'22px', marginBottom:'4px' }}>{s.emoji}</div>
+              <p style={{ fontSize:'12px', fontWeight:800, color:'var(--fg)' }}>{s.label}</p>
+              <p style={{ fontSize:'10px', color:'var(--muted)', fontWeight:600 }}>{s.sub}</p>
             </div>
-            {wrongWords.map((w, i) => (
-              <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderBottom: i < wrongWords.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <span style={{ fontSize: '20px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: '#fff' }}>{w.kanji}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{w.meaning}</p>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{w.reading}</p>
-                </div>
-                <span style={{ fontSize: '11px', color: '#E24B4A', background: 'rgba(226,75,74,0.15)', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(226,75,74,0.3)' }}>reset</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={startGame} style={WHITE_BTN}>Try again</button>
-          <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>Dashboard</button>
+          ))}
         </div>
+
+        {canPlay
+          ? <button className="btn btn-red" style={{ padding:'14px 40px', fontSize:'16px' }} onClick={startGame}>Start 💀</button>
+          : <div style={{ background:'var(--red-light)', border:'2.5px solid var(--red)', borderRadius:'14px', padding:'14px 20px', maxWidth:'280px' }}>
+              <p style={{ fontSize:'14px', fontWeight:700, color:'var(--red-dark)' }}>Need at least 4 words</p>
+              <button className="btn btn-primary" style={{ marginTop:'10px', width:'100%' }} onClick={() => router.push('/dashboard')}>Generate words first</button>
+            </div>
+        }
+        <button className="btn" style={{ marginTop:'12px' }} onClick={() => router.push('/dashboard')}>← Dashboard</button>
       </div>
-    </Screen>
+    </Shell>
   );
 
-  if (phase === 'cleared') return (
-    <Screen>
-      <TopBar onBack={() => router.push('/dashboard')} />
-      <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: '80px', marginBottom: '1rem', filter: 'drop-shadow(0 0 20px rgba(0,232,122,0.5))' }}>🏆</div>
-        <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Survival Cleared!</h2>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>{stats.correct} words survived</p>
-        <div style={{ fontSize: '28px', marginBottom: '1.5rem', letterSpacing: '8px' }}>
-          {'❤️'.repeat(lives)}{'🖤'.repeat(MAX_LIVES - lives)}
-        </div>
-        <div style={{ background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.25)', borderRadius: '12px', padding: '12px 16px', fontSize: '13px', color: '#00e87a', marginBottom: '2rem', width: '100%' }}>
-          ✓ {queue.length - wrongWords.length} words boosted to 30 day review
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={startGame} style={WHITE_BTN}>Run again</button>
-          <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>Dashboard</button>
-        </div>
-      </div>
-    </Screen>
-  );
-
-  if (!question) return null;
-
-  return (
-    <Screen>
-      <TopBar onBack={() => { stopTimer(); router.push('/dashboard'); }} />
-
-      {/* Lives + counter */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <div style={{ fontSize: '24px', letterSpacing: '4px', filter: 'drop-shadow(0 0 6px rgba(226,75,74,0.5))' }}>
-          {'❤️'.repeat(lives)}{'🖤'.repeat(MAX_LIVES - lives)}
-        </div>
-        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)' }}>
-          {idx + 1}/{queue.length}
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ height: '2px', background: 'rgba(255,255,255,0.1)', borderRadius: '1px', marginBottom: '6px' }}>
-        <div style={{ height: '2px', background: 'rgba(255,255,255,0.4)', borderRadius: '1px', width: `${pct}%`, transition: 'width 0.3s' }} />
-      </div>
-
-      {/* Timer bar */}
-      <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginBottom: '1rem', overflow: 'hidden' }}>
-        <div style={{ height: '4px', borderRadius: '2px', width: `${timerPct}%`, background: timerColor, transition: 'width 1s linear, background 0.3s', boxShadow: `0 0 8px ${timerColor}` }} />
-      </div>
-
-      {/* Timer number */}
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <span style={{ fontSize: '48px', fontWeight: 700, color: timerColor, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-mono)', textShadow: `0 0 20px ${timerColor}60`, transition: 'color 0.3s' }}>
-          {timeLeft}
-        </span>
-      </div>
-
-      {/* Question card */}
-      <div style={{ background: 'rgba(0,0,0,0.35)', borderRadius: '20px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.08)', position: 'relative' }}>
-        <button onClick={() => speak(question.word.kanji, targetLang)} style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>🔊</button>
-        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>WHAT DOES THIS MEAN?</p>
-        <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '12px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: '#fff', textShadow: '0 0 30px rgba(255,255,255,0.15)' }}>
-          {question.word.kanji}
-        </div>
-        <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)' }}>
-          {question.word.reading}
-          {question.word.romanization && <span style={{ fontSize: '13px', marginLeft: '6px', opacity: 0.7 }}>· {question.word.romanization}</span>}
+  // ── DEAD ──────────────────────────────────────────────
+  if (phase === 'dead') return (
+    <Shell>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+        <div style={{ fontSize:'80px', marginBottom:'1rem', animation:'bounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>💔</div>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'28px', fontWeight:900, color:'var(--fg)', marginBottom:'4px' }}>You died!</h2>
+        <p style={{ fontSize:'15px', color:'var(--muted)', fontWeight:600, marginBottom:'1.5rem' }}>
+          Survived {qIdx} / {queue.length} questions
         </p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'2rem', width:'100%', maxWidth:'340px' }}>
+          <ScoreCard emoji="⭐" label="Score"     value={String(score)} />
+          <ScoreCard emoji="🔥" label="Best Combo" value={`x${maxCombo}`} />
+          <ScoreCard emoji="💀" label="Survived"   value={`${qIdx}/${queue.length}`} />
+        </div>
+        <button className="btn btn-red" style={{ padding:'13px 32px', fontSize:'15px', marginBottom:'10px' }} onClick={startGame}>Try Again 💀</button>
+        <button className="btn" onClick={() => router.push('/dashboard')}>← Dashboard</button>
+      </div>
+    </Shell>
+  );
+
+  // ── CLEARED ───────────────────────────────────────────
+  if (phase === 'cleared') return (
+    <Shell>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+        <div style={{ fontSize:'80px', marginBottom:'1rem', animation:'bounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1)' }}>🏆</div>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'28px', fontWeight:900, color:'var(--fg)', marginBottom:'4px' }}>You cleared it!</h2>
+        <p style={{ fontSize:'15px', color:'var(--muted)', fontWeight:600, marginBottom:'1.5rem' }}>All {queue.length} questions!</p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'2rem', width:'100%', maxWidth:'340px' }}>
+          <ScoreCard emoji="⭐" label="Score"      value={String(score)} accent="var(--yellow)" />
+          <ScoreCard emoji="🔥" label="Best Combo"  value={`x${maxCombo}`} accent="var(--orange)" />
+          <ScoreCard emoji="❤️" label="Lives Left"  value={Array(lives).fill('❤️').join('')} />
+        </div>
+        <button className="btn btn-primary" style={{ padding:'13px 32px', fontSize:'15px', marginBottom:'10px' }} onClick={startGame}>Play Again 🔄</button>
+        <button className="btn" onClick={() => router.push('/dashboard')}>← Dashboard</button>
+      </div>
+    </Shell>
+  );
+
+  // ── PLAYING ───────────────────────────────────────────
+  return (
+    <Shell>
+      {/* Top bar */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
+        <button className="btn" style={{ fontSize:'12px', padding:'6px 12px' }} onClick={() => { clearInterval(timerRef.current!); setPhase('intro'); }}>✕</button>
+        {/* Lives */}
+        <div style={{ display:'flex', gap:'4px', fontSize:'22px' }}>
+          {Array(MAX_LIVES).fill(0).map((_,i) => (
+            <span key={i} style={{ opacity: i < lives ? 1 : 0.2, animation: i === lives && answered && !selected.includes(question!.correct) ? 'heartBeat 0.3s ease' : 'none' }}>❤️</span>
+          ))}
+        </div>
+        {/* Score + combo */}
+        <div style={{ textAlign:'right' }}>
+          <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', lineHeight:1 }}>{score}</p>
+          {combo >= 2 && <p style={{ fontSize:'11px', fontWeight:800, color:'var(--orange)', animation:'pulse 0.6s ease-in-out infinite' }}>🔥 x{combo}</p>}
+        </div>
       </div>
 
-      {/* Choices */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {question.choices.map(choice => {
+      {/* Timer */}
+      <div style={{ marginBottom:'1rem' }}>
+        <div className="progress-track" style={{ height:'10px' }}>
+          <div className="progress-fill" style={{ width:`${timerPct}%`, background: timerPct > 60 ? 'linear-gradient(90deg,var(--green),#7ee800)' : timerPct > 25 ? 'linear-gradient(90deg,var(--orange),#ffc800)' : 'linear-gradient(90deg,var(--red),#ff8080)', transition:'width 1s linear, background 0.3s' }} />
+        </div>
+        <p style={{ textAlign:'right', fontSize:'11px', fontWeight:800, color:timerColor, marginTop:'3px' }}>{timeLeft}s</p>
+      </div>
+
+      {/* Word card */}
+      <div style={{ position:'relative', marginBottom:'1rem' }}>
+        {/* XP pop-ups */}
+        {xpPops?.map(p => (
+          <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, top:'-10px', fontFamily:'var(--font-display)', fontSize:'14px', fontWeight:800, color:'var(--green-dark)', pointerEvents:'none', zIndex:10, animation:'xpPop 0.8s ease forwards', whiteSpace:'nowrap' }}>
+            {p.text}
+          </div>
+        ))}
+        <div style={{
+          background:'#fff', border:`2.5px solid ${answered && selected !== question?.correct ? 'var(--red)' : answered ? 'var(--green)' : 'var(--border-dark)'}`,
+          borderRadius:'24px', padding:'2rem', textAlign:'center',
+          boxShadow: answered && selected !== question?.correct ? '0 6px 0 var(--red-dark)' : answered ? '0 6px 0 var(--green-dark)' : '0 8px 0 var(--border-dark)',
+          animation: shakingCard ? 'wrongShake 0.4s ease' : 'fadeIn 0.2s ease',
+          transition:'border-color 0.15s, box-shadow 0.15s',
+        }}>
+          <div style={{ fontSize:'11px', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--muted)', marginBottom:'1rem' }}>{question?.word.topic}</div>
+          <div style={{ fontSize:'72px', lineHeight:1, fontFamily:'"Noto Sans JP","Noto Sans SC",serif', color:'var(--fg)', marginBottom:'8px' }}>{question?.word.kanji}</div>
+          <p style={{ fontSize:'16px', color:'var(--muted-bright)', fontWeight:600 }}>{question?.word.reading}</p>
+        </div>
+      </div>
+
+      {/* Choices 2x2 */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+        {question?.choices.map(choice => {
           const isCorrect  = choice === question.correct;
           const isSelected = choice === selected;
-          let bg = 'rgba(255,255,255,0.06)', borderColor = 'rgba(255,255,255,0.12)', color = 'rgba(255,255,255,0.85)', opacity = 1;
+          let bg = '#fff', border = 'var(--border-dark)', shadow = 'var(--border-dark)', color = 'var(--fg)', opacity = 1;
           if (answered) {
-            if (isCorrect)               { bg = 'rgba(0,232,122,0.15)';  borderColor = 'rgba(0,232,122,0.5)';  color = '#00e87a'; }
-            else if (isSelected)         { bg = 'rgba(226,75,74,0.15)';  borderColor = 'rgba(226,75,74,0.5)';  color = '#ff8080'; }
-            else                         { opacity = 0.3; }
+            if (isCorrect)      { bg = 'var(--green-light)'; border = 'var(--green)'; shadow = 'var(--green-dark)'; color = '#2a7a00'; }
+            else if (isSelected){ bg = 'var(--red-light)';   border = 'var(--red)';   shadow = 'var(--red-dark)';   color = 'var(--red-dark)'; }
+            else                { opacity = 0.35; }
           }
           return (
-            <button key={choice} disabled={answered} onClick={() => handleAnswer(choice)} style={{
-              padding: '14px 16px', borderRadius: '12px', borderWidth: '1px', borderStyle: 'solid', borderColor,
-              background: bg, color, fontSize: '14px', cursor: answered ? 'default' : 'pointer',
-              fontFamily: 'var(--font-ui)', textAlign: 'left', transition: 'all 0.15s', opacity,
-              display: 'flex', alignItems: 'center', gap: '8px',
+            <button key={choice} onClick={() => handleAnswer(choice)} disabled={answered} style={{
+              padding:'13px 10px', borderRadius:'14px', border:`2.5px solid ${border}`,
+              background:bg, color, fontSize:'13px', fontWeight:700,
+              cursor:answered ? 'default' : 'pointer', fontFamily:'var(--font-ui)',
+              boxShadow:`0 4px 0 ${shadow}`, opacity, lineHeight:1.3,
+              transition:'all 0.1s ease',
+              animation: answered && isSelected && !isCorrect ? 'wrongShake 0.35s ease' : answered && isCorrect && isSelected ? 'correctPop 0.35s ease' : 'none',
             }}>
-              {answered && isCorrect  && <span style={{ fontSize: '16px' }}>✓</span>}
-              {answered && isSelected && !isCorrect && <span style={{ fontSize: '16px' }}>✗</span>}
-              {choice}
+              {answered && isCorrect && '✅ '}{answered && isSelected && !isCorrect && '❌ '}{choice}
             </button>
           );
         })}
       </div>
 
-      {answered && selected === '__timeout__' && (
-        <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '14px', color: '#ff8080', animation: 'fadeIn 0.2s ease' }}>
-          ⏱ Time's up — {question.word.meaning}
-        </div>
-      )}
-
       <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes heartBeat { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)} }
+        @keyframes xpPop { 0%{opacity:0;transform:translateY(0) scale(0.6)} 40%{opacity:1;transform:translateY(-22px) scale(1.2)} 100%{opacity:0;transform:translateY(-42px) scale(1)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes bounceIn { 0%{opacity:0;transform:scale(0.6)} 60%{transform:scale(1.12)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes wrongShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+        @keyframes correctPop { 0%{transform:scale(1)} 30%{transform:scale(1.06)} 100%{transform:scale(1)} }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
       `}</style>
-    </Screen>
+    </Shell>
   );
 }
 
-function Screen({ children }: { children: React.ReactNode }) {
+function ScoreCard({ emoji, label, value, accent = 'var(--blue)' }: { emoji:string; label:string; value:string; accent?:string }) {
   return (
-    <main style={{
-      minHeight: '100vh',
-      background: '#1a0505',
-      backgroundImage: 'radial-gradient(ellipse at top, #3d0a0a 0%, #1a0505 50%, #0d0202 100%)',
-      display: 'flex', flexDirection: 'column',
-      padding: '1.5rem 1.25rem 2rem', fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(226,75,74,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(226,75,74,0.03) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {children}
-      </div>
-    </main>
-  );
-}
-
-function TopBar({ onBack }: { onBack: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>💀 Survival</span>
-      <div style={{ width: '60px' }} />
+    <div style={{ background:'#fff', border:`2.5px solid ${accent}55`, borderRadius:'14px', padding:'12px 8px', textAlign:'center', boxShadow:`0 4px 0 ${accent}55` }}>
+      <div style={{ fontSize:'20px', marginBottom:'4px' }}>{emoji}</div>
+      <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', lineHeight:1 }}>{value}</p>
+      <p style={{ fontSize:'10px', fontWeight:700, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'3px' }}>{label}</p>
     </div>
   );
 }
 
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#1a0505', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-
-function Spinner() {
-  return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(226,75,74,0.2)', borderTopColor: '#E24B4A', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column', padding:'1.5rem 1.25rem 3rem', fontFamily:'var(--font-ui)', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:'-80px', right:'-80px', width:'280px', height:'280px', borderRadius:'50%', background:'rgba(255,75,75,0.08)', filter:'blur(50px)', pointerEvents:'none' }} />
+      <div style={{ maxWidth:'480px', margin:'0 auto', width:'100%', flex:1, display:'flex', flexDirection:'column', position:'relative', zIndex:1 }}>{children}</div>
+    </main>
+  );
 }

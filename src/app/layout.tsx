@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Noto_Sans_JP, Noto_Sans_SC } from 'next/font/google';
+import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 import './globals.css';
 
 const geistSans = Geist({
@@ -56,21 +57,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
-
-        {/* Register service worker */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(reg) { console.log('[SW] registered'); })
-                    .catch(function(err) { console.warn('[SW] failed:', err); });
-                });
-              }
-            `,
-          }}
-        />
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

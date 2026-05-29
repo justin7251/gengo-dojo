@@ -1,5 +1,5 @@
 'use client';
-
+import { Spinner } from '@/components/Spinner';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
@@ -8,31 +8,23 @@ import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/li
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function FlashcardsPage() {
-  return <AuthGuard><Flashcards /></AuthGuard>;
-}
+export default function FlashcardsPage() { return <AuthGuard><Flashcards /></AuthGuard>; }
 
 type RevealStep = 'kanji' | 'meaning' | 'example';
-
-// Screen accent color
-const ACCENT = '#00e87a';
 
 function speak(text: string, targetLang: TargetLang) {
   if (typeof window === 'undefined') return;
   window.speechSynthesis.cancel();
-  const utter    = new SpeechSynthesisUtterance(text);
-  utter.lang     = VOICE_LANG[targetLang] ?? 'ja-JP';
-  utter.rate     = 0.85;
-  const voices   = window.speechSynthesis.getVoices();
-  const langCode = VOICE_LANG[targetLang].split('-')[0];
-  const native   = voices.find(v => v.lang.startsWith(langCode));
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang  = VOICE_LANG[targetLang] ?? 'ja-JP'; utter.rate = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const native = voices.find(v => v.lang.startsWith(VOICE_LANG[targetLang].split('-')[0]));
   if (native) utter.voice = native;
   window.speechSynthesis.speak(utter);
 }
 
 function Flashcards() {
   const router = useRouter();
-
   const [uid, setUid]                   = useState('');
   const [targetLang, setTargetLang]     = useState<TargetLang>('ja');
   const [nativeLang, setNativeLang]     = useState<NativeLang>('en');
@@ -46,10 +38,7 @@ function Flashcards() {
   const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0 });
   const [done, setDone]                 = useState(false);
 
-  useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-  }, []);
+  useEffect(() => { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices(); }, []);
 
   useEffect(() => {
     return onAuth(async (user) => {
@@ -57,14 +46,10 @@ function Flashcards() {
       setUid(user.uid);
       const profile = await getUserProfile(user.uid);
       if (!profile) return;
-      setTargetLang(profile.targetLang);
-      setNativeLang(profile.nativeLang);
-      const [words, prog] = await Promise.all([
-        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
-        getProgress(user.uid, profile.targetLang, profile.nativeLang),
-      ]);
+      setTargetLang(profile.targetLang); setNativeLang(profile.nativeLang);
+      const [words, prog] = await Promise.all([getUserWords(user.uid, profile.targetLang, profile.nativeLang), getProgress(user.uid, profile.targetLang, profile.nativeLang)]);
       setProgress(prog);
-      const due  = words.filter(w => prog[w.id] && isDue(prog[w.id]));
+      const due = words.filter(w => prog[w.id] && isDue(prog[w.id]));
       const rest = words.filter(w => !prog[w.id] || !isDue(prog[w.id]));
       setQueue([...due, ...rest].sort(() => Math.random() - 0.5));
       setLoading(false);
@@ -76,15 +61,10 @@ function Flashcards() {
 
   function handleSpeak(text?: string) {
     if (!current) return;
-    setSpeaking(true);
-    speak(text ?? current.kanji, targetLang);
+    setSpeaking(true); speak(text ?? current.kanji, targetLang);
     setTimeout(() => setSpeaking(false), 1200);
   }
-
-  function handleRevealMeaning() {
-    setReveal('meaning');
-    speak(current.kanji, targetLang);
-  }
+  function handleRevealMeaning() { setReveal('meaning'); speak(current.kanji, targetLang); }
 
   async function handleRate(r: Rating) {
     if (!current || rating) return;
@@ -92,185 +72,110 @@ function Flashcards() {
     const prev = progress[current.id];
     if (prev) {
       await rateWord(uid, current.id, r, prev, targetLang, nativeLang);
-      setSessionStats(s => ({
-        correct: r !== 'wrong' ? s.correct + 1 : s.correct,
-        wrong:   r === 'wrong' ? s.wrong + 1   : s.wrong,
-      }));
+      setSessionStats(s => ({ correct: r !== 'wrong' ? s.correct + 1 : s.correct, wrong: r === 'wrong' ? s.wrong + 1 : s.wrong }));
     }
     const next = idx + 1;
-    if (next >= queue.length) { setDone(true); }
-    else { setIdx(next); setReveal('kanji'); }
+    if (next >= queue.length) { setDone(true); } else { setIdx(next); setReveal('kanji'); }
     setRating(false);
   }
 
-  if (loading) return <Screen><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div></Screen>;
+  if (loading) return <Shell accent="var(--green)"><div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner size={40} color="var(--green)" /></div></Shell>;
 
   if (!queue.length) return (
-    <Screen>
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <p style={{ fontSize: '40px', marginBottom: '1rem' }}>📭</p>
-        <p style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>No words yet</p>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>Generate vocabulary from the dashboard first.</p>
-        <button onClick={() => router.push('/dashboard')} style={BACK_BTN_STYLE}>← Dashboard</button>
-      </div>
-    </Screen>
+    <Shell accent="var(--green)">
+      <TopBar onBack={() => router.push('/dashboard')} title="🃏 Flashcards" accent="var(--green)" />
+      <EmptyState emoji="📭" title="No words yet" sub="Generate vocabulary from the dashboard first." onBack={() => router.push('/dashboard')} />
+    </Shell>
   );
 
   if (done) {
     const total = sessionStats.correct + sessionStats.wrong;
     const pctC  = total ? Math.round(sessionStats.correct / total * 100) : 0;
     return (
-      <Screen>
-        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-          <div style={{ fontSize: '64px', marginBottom: '1rem' }}>
-            {pctC >= 80 ? '🏆' : pctC >= 50 ? '💪' : '📖'}
-          </div>
-          <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Session complete</h2>
-          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
-            {sessionStats.correct} correct · {sessionStats.wrong} again
-          </p>
-          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', marginBottom: '8px' }}>
-            <div style={{ height: '6px', borderRadius: '4px', width: `${pctC}%`, background: '#fff' }} />
-          </div>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>{pctC}% accuracy</p>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <button onClick={() => { setIdx(0); setReveal('kanji'); setDone(false); setSessionStats({ correct: 0, wrong: 0 }); }}
-              style={{ ...BTN_WHITE_STYLE }}>
-              Study again
-            </button>
-            <button onClick={() => router.push('/dashboard')} style={BTN_GHOST_STYLE}>Dashboard</button>
-          </div>
-        </div>
-      </Screen>
+      <Shell accent="var(--green)">
+        <TopBar onBack={() => router.push('/dashboard')} title="🃏 Flashcards" accent="var(--green)" />
+        <ResultCard emoji={pctC >= 80 ? '🏆' : pctC >= 50 ? '💪' : '📖'}
+          title={pctC >= 80 ? 'Amazing work!' : pctC >= 50 ? 'Good effort!' : 'Keep going!'}
+          correct={sessionStats.correct} wrong={sessionStats.wrong} pct={pctC}
+          onRetry={() => { setIdx(0); setReveal('kanji'); setDone(false); setSessionStats({ correct: 0, wrong: 0 }); }}
+          onDashboard={() => router.push('/dashboard')} />
+      </Shell>
     );
   }
 
   return (
-    <Screen>
-      {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={BACK_BTN_STYLE}>← Back</button>
-        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)' }}>
-          {idx + 1} / {queue.length}
-        </span>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <span style={{
-            fontSize: '11px', padding: '3px 8px', borderRadius: '99px',
-            background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)',
-          }}>
-            {current.topic}
-          </span>
+    <Shell accent="var(--green)">
+      <TopBar onBack={() => router.push('/dashboard')} title="🃏 Flashcards" accent="var(--green)" />
+
+      {/* Progress */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '6px' }}>
+          <span>Card {idx + 1} of {queue.length}</span>
+          <span style={{ color: 'var(--green-dark)' }}>{sessionStats.correct} ✓</span>
         </div>
+        <div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ height: '2px', background: 'rgba(255,255,255,0.15)', borderRadius: '1px', marginBottom: '2rem' }}>
-        <div style={{ height: '2px', borderRadius: '1px', width: `${pct}%`, background: '#fff', transition: 'width 0.4s ease' }} />
-      </div>
-
-      {/* Kanji hero */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Ghost kanji background */}
-        <div style={{
-          position: 'absolute', fontSize: '220px', lineHeight: 1,
-          fontFamily: '"Noto Sans JP","Noto Sans SC",serif',
-          color: 'rgba(255,255,255,0.05)', userSelect: 'none', pointerEvents: 'none',
-          top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          zIndex: 0,
-        }}>
+      {/* Card */}
+      <div style={{
+        background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '24px',
+        boxShadow: '0 8px 0 var(--border-dark)', padding: '2rem', textAlign: 'center',
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        position: 'relative', overflow: 'hidden', minHeight: '320px',
+        animation: 'fadeIn 0.25s ease',
+      }}>
+        {/* Ghost kanji bg */}
+        <div style={{ position: 'absolute', fontSize: '180px', lineHeight: 1, fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: 'var(--bg-secondary)', userSelect: 'none', pointerEvents: 'none', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 0 }}>
           {current.kanji}
         </div>
-
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', textAlign: 'center' }}>
-          {/* Voice button */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+          {/* Topic pill + speaker */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span className="pill pill-teal">{current.topic}</span>
             <button onClick={() => handleSpeak()} style={{
               width: '40px', height: '40px', borderRadius: '50%',
-              border: `1px solid rgba(255,255,255,${speaking ? '0.6' : '0.2'})`,
-              background: speaking ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
-              cursor: 'pointer', fontSize: '18px', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
-              color: '#fff',
+              border: `2.5px solid ${speaking ? 'var(--green)' : 'var(--border-dark)'}`,
+              background: speaking ? 'var(--green-light)' : 'var(--bg-secondary)',
+              cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: speaking ? '0 3px 0 var(--green-dark)' : '0 3px 0 var(--border-dark)',
+              transition: 'all 0.15s',
             }}>🔊</button>
           </div>
-
-          {/* Main kanji */}
-          <div style={{
-            fontSize: '96px', lineHeight: 1,
-            fontFamily: '"Noto Sans JP","Noto Sans SC",serif',
-            color: '#fff', marginBottom: '12px',
-            textShadow: '0 0 40px rgba(255,255,255,0.2)',
-          }}>
+          {/* Kanji */}
+          <div style={{ fontSize: '88px', lineHeight: 1, fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: 'var(--fg)', marginBottom: '10px' }}>
             {current.kanji}
           </div>
-
           {/* Reading */}
-          <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', letterSpacing: '0.05em' }}>
-            {current.reading}
-            {current.romanization && (
-              <span style={{ fontSize: '14px', marginLeft: '8px', opacity: 0.7 }}>· {current.romanization}</span>
-            )}
+          <p style={{ fontSize: '18px', color: 'var(--muted-bright)', marginBottom: '1.5rem', fontWeight: 600 }}>
+            {current.reading}{current.romanization && <span style={{ fontSize: '14px', marginLeft: '8px', opacity: 0.7 }}>· {current.romanization}</span>}
           </p>
 
-          {/* Reveal step 1 */}
           {reveal === 'kanji' && (
-            <button onClick={handleRevealMeaning} style={BTN_WHITE_STYLE}>
-              Reveal meaning
+            <button onClick={handleRevealMeaning} className="btn btn-primary" style={{ padding: '12px 32px', fontSize: '15px' }}>
+              Reveal Meaning 👁
             </button>
           )}
 
-          {/* Meaning */}
           {reveal !== 'kanji' && (
-            <div style={{ animation: 'fadeIn 0.25s ease' }}>
-              <div style={{
-                fontSize: '28px', fontWeight: 600, color: '#fff',
-                marginBottom: '16px',
-                padding: '14px 24px', background: 'rgba(255,255,255,0.12)',
-                borderRadius: '12px', display: 'inline-block',
-                border: '1px solid rgba(255,255,255,0.2)',
-              }}>
+            <div style={{ animation: 'bounceIn 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--fg)', marginBottom: '14px', padding: '12px 20px', background: 'var(--green-light)', borderRadius: '14px', border: '2.5px solid var(--green)', display: 'inline-block', boxShadow: '0 4px 0 var(--green-dark)', fontFamily: 'var(--font-display)' }}>
                 {current.meaning}
               </div>
-
               {reveal === 'meaning' && (
                 <div>
-                  <button onClick={() => setReveal('example')} style={BTN_GHOST_STYLE}>
-                    Show example →
-                  </button>
+                  <button onClick={() => setReveal('example')} className="btn" style={{ fontSize: '14px' }}>Show example →</button>
                 </div>
               )}
-
               {reveal === 'example' && current.example && (
-                <div style={{ animation: 'fadeIn 0.2s ease' }}>
-                  <div style={{
-                    background: 'rgba(0,0,0,0.25)', borderRadius: '12px',
-                    padding: '14px 16px', textAlign: 'left', marginTop: '8px',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: current.example_translation ? '8px' : '0' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>💬</span>
-                      <span style={{
-                        flex: 1, fontSize: '15px', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)',
-                        fontFamily: '"Noto Sans JP","Noto Sans SC",serif',
-                      }}>
-                        {current.example}
-                      </span>
-                      <button onClick={() => handleSpeak(current.example)} style={{
-                        width: '28px', height: '28px', borderRadius: '50%',
-                        border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)',
-                        cursor: 'pointer', fontSize: '12px', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff',
-                      }}>🔊</button>
-                    </div>
-                    {current.example_translation && (
-                      <p style={{
-                        fontSize: '13px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic',
-                        borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px', paddingLeft: '20px',
-                      }}>
-                        {current.example_translation}
-                      </p>
-                    )}
+                <div style={{ animation: 'fadeIn 0.2s ease', background: 'var(--bg-secondary)', borderRadius: '14px', padding: '14px 16px', textAlign: 'left', border: '2px solid var(--border-dark)', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: current.example_translation ? '8px' : '0' }}>
+                    <span style={{ color: 'var(--muted)' }}>💬</span>
+                    <span style={{ flex: 1, fontSize: '15px', lineHeight: 1.7, color: 'var(--fg)', fontFamily: '"Noto Sans JP","Noto Sans SC",serif' }}>{current.example}</span>
+                    <button onClick={() => handleSpeak(current.example)} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '2px solid var(--border-dark)', background: 'var(--bg-secondary)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🔊</button>
                   </div>
+                  {current.example_translation && (
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', fontStyle: 'italic', borderTop: '2px solid var(--border-dark)', paddingTop: '8px', paddingLeft: '20px' }}>{current.example_translation}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -280,85 +185,91 @@ function Flashcards() {
 
       {/* SRS buttons */}
       {reveal !== 'kanji' && (
-        <div style={{ marginTop: '2rem', animation: 'fadeIn 0.3s ease' }}>
-          <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '10px' }}>
-            HOW DID YOU DO?
-          </p>
+        <div style={{ marginTop: '1.25rem', animation: 'fadeUp 0.3s ease' }}>
+          <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--muted)', textAlign: 'center', marginBottom: '10px', textTransform: 'uppercase' }}>How did you do?</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
             {([
-              { r: 'wrong', label: 'Again', sub: '1d',  bg: 'rgba(226,75,74,0.25)',  border: 'rgba(226,75,74,0.5)' },
-              { r: 'hard',  label: 'Hard',  sub: '3d',  bg: 'rgba(239,159,39,0.25)', border: 'rgba(239,159,39,0.5)' },
-              { r: 'good',  label: 'Good',  sub: '7d',  bg: 'rgba(255,255,255,0.15)',border: 'rgba(255,255,255,0.4)' },
-              { r: 'easy',  label: 'Easy',  sub: '30d', bg: 'rgba(0,232,122,0.25)',  border: 'rgba(0,232,122,0.5)' },
-            ] as { r: Rating; label: string; sub: string; bg: string; border: string }[]).map(({ r, label, sub, bg, border }) => (
+              { r: 'wrong', label: 'Again', sub: '1d',  bg: 'var(--red-light)',    border: 'var(--red)',    shadow: 'var(--red-dark)',    color: 'var(--red-dark)' },
+              { r: 'hard',  label: 'Hard',  sub: '3d',  bg: 'var(--orange-light)', border: 'var(--orange)', shadow: 'var(--orange-dark)', color: 'var(--orange-dark)' },
+              { r: 'good',  label: 'Good',  sub: '7d',  bg: 'var(--blue-light)',   border: 'var(--blue)',   shadow: 'var(--blue-dark)',   color: 'var(--blue-dark)' },
+              { r: 'easy',  label: 'Easy',  sub: '30d', bg: 'var(--green-light)',  border: 'var(--green)',  shadow: 'var(--green-dark)',  color: 'var(--green-dark)' },
+            ] as { r: Rating; label: string; sub: string; bg: string; border: string; shadow: string; color: string }[]).map(({ r, label, sub, bg, border, shadow, color }) => (
               <button key={r} disabled={rating} onClick={() => handleRate(r)} style={{
-                padding: '12px 0', borderRadius: '10px',
-                border: `1px solid ${border}`,
-                background: bg, color: '#fff',
-                fontSize: '13px', fontWeight: 500,
+                padding: '12px 4px', borderRadius: '14px', border: `2.5px solid ${border}`,
+                background: bg, color, fontSize: '13px', fontWeight: 800,
                 cursor: rating ? 'not-allowed' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                opacity: rating ? 0.5 : 1, transition: 'opacity 0.15s', fontFamily: 'inherit',
+                opacity: rating ? 0.5 : 1, transition: 'all 0.1s ease',
+                boxShadow: `0 4px 0 ${shadow}`, fontFamily: 'var(--font-ui)',
               }}>
                 <span>{label}</span>
-                <span style={{ fontSize: '11px', opacity: 0.6 }}>{sub}</span>
+                <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 700 }}>{sub}</span>
               </button>
             ))}
           </div>
         </div>
       )}
-    </Screen>
+    </Shell>
   );
 }
 
-// ── Full-bleed teal screen ────────────────────────────
-function Screen({ children }: { children: React.ReactNode }) {
+// ── Shared sub-components ─────────────────────────────
+
+function Shell({ children, accent = 'var(--green)' }: { children: React.ReactNode; accent?: string }) {
   return (
-    <main style={{
-      minHeight: '100vh', background: '#0a6e4a',
-      backgroundImage: 'radial-gradient(ellipse at top, #0d9060 0%, #064d33 60%, #031f15 100%)',
-      display: 'flex', flexDirection: 'column',
-      padding: '1.5rem 1.25rem 2rem',
-      fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Grid overlay */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)',
-        backgroundSize: '40px 40px',
-      }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: `${accent}12`, filter: 'blur(50px)', pointerEvents: 'none', animation: 'orbDrift 7s ease-in-out infinite' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
       <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes orbDrift { 0%,100%{transform:translate(0,0)} 33%{transform:translate(-12px,8px)} 66%{transform:translate(6px,-10px)} }
+        @keyframes fadeIn   { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeUp   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes bounceIn { 0%{opacity:0;transform:scale(0.7)} 60%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }
       `}</style>
     </main>
   );
 }
 
-const BACK_BTN_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-  borderRadius: '8px', padding: '7px 14px', color: '#fff', fontSize: '13px',
-  cursor: 'pointer', fontFamily: 'var(--font-ui)', transition: 'all 0.15s',
-};
+function TopBar({ onBack, title, accent }: { onBack: () => void; title: string; accent: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+      <button onClick={onBack} className="btn" style={{ fontSize: '13px', padding: '8px 14px' }}>← Back</button>
+      <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--fg)' }}>{title}</span>
+      <div style={{ width: '70px' }} />
+    </div>
+  );
+}
 
-const BTN_WHITE_STYLE: React.CSSProperties = {
-  background: '#fff', border: 'none', borderRadius: '10px',
-  padding: '12px 28px', color: '#032010', fontSize: '15px',
-  fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)',
-  transition: 'all 0.15s',
-};
+function EmptyState({ emoji, title, sub, onBack }: { emoji: string; title: string; sub: string; onBack: () => void }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '4rem 0', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ fontSize: '56px', marginBottom: '1rem' }}>{emoji}</p>
+      <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--fg)', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>{title}</p>
+      <p style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 600 }}>{sub}</p>
+      <button className="btn btn-primary" onClick={onBack}>← Dashboard</button>
+    </div>
+  );
+}
 
-const BTN_GHOST_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
-  borderRadius: '10px', padding: '10px 22px', color: '#fff',
-  fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
-  transition: 'all 0.15s',
-};
-
-function Spinner() {
-  return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
+function ResultCard({ emoji, title, correct, wrong, pct, onRetry, onDashboard }: {
+  emoji: string; title: string; correct: number; wrong: number; pct: number;
+  onRetry: () => void; onDashboard: () => void;
+}) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+      <div style={{ fontSize: '80px', marginBottom: '1rem', animation: 'bounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>{emoji}</div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 900, color: 'var(--fg)', marginBottom: '6px' }}>{title}</h2>
+      <p style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 600 }}>{correct} correct · {wrong} again</p>
+      <div style={{ width: '100%', maxWidth: '320px', marginBottom: '6px' }}>
+        <div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
+      </div>
+      <p style={{ fontSize: '14px', color: 'var(--muted-bright)', marginBottom: '2rem', fontWeight: 700 }}>{pct}% accuracy</p>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button className="btn btn-primary" onClick={onRetry}>Study Again 🔄</button>
+        <button className="btn" onClick={onDashboard}>Dashboard</button>
+      </div>
+    </div>
+  );
 }

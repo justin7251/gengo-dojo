@@ -2,7 +2,7 @@
 
 import {
   doc, setDoc, getDoc, getDocs,
-  collection, writeBatch, updateDoc, deleteDoc,
+  collection, writeBatch, updateDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -37,50 +37,6 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   return snap.exists() ? (snap.data() as UserProfile) : null;
 }
 
-// ── Shared vocabulary reads ───────────────────────────
-
-// Fetch all words for a topic + targetLang, assembled with a specific translation
-export async function getSharedWords(
-  topic:      string,
-  targetLang: TargetLang,
-  nativeLang: NativeLang
-): Promise<Word[]> {
-  const slug     = topicSlug(topic);
-  const wordsRef = collection(db, 'vocabulary', slug, 'words');
-  const snap     = await getDocs(wordsRef);
-
-  const words: Word[] = [];
-
-  for (const wordDoc of snap.docs) {
-    const shared = wordDoc.data() as SharedWord;
-    if (shared.targetLang !== targetLang) continue;
-
-    // Fetch translation subcollection for this native language
-    const transSnap = await getDoc(
-      doc(db, 'vocabulary', slug, 'words', wordDoc.id, 'translations', nativeLang)
-    );
-    if (!transSnap.exists()) continue;
-
-    const trans = transSnap.data() as WordTranslation;
-
-    words.push({
-      id:                  wordDoc.id,
-      kanji:               shared.kanji,
-      reading:             shared.reading,
-      romanization:        shared.romanization,
-      example:             shared.example,
-      type:                shared.type,
-      targetLang:          shared.targetLang,
-      nativeLang,
-      topic:               shared.topic,
-      createdAt:           shared.createdAt,
-      meaning:             trans.meaning,
-      example_translation: trans.example_translation,
-    });
-  }
-
-  return words;
-}
 
 // ── User word list ────────────────────────────────────
 
@@ -276,16 +232,6 @@ export async function initKanaProgress(
 }
 
 // ── Topic checks ──────────────────────────────────────
-
-// Check if a topic already has words in the shared library
-export async function topicExists(
-  topic:      string,
-  targetLang: TargetLang
-): Promise<boolean> {
-  const slug = topicSlug(topic);
-  const snap = await getDocs(collection(db, 'vocabulary', slug, 'words'));
-  return snap.docs.some(d => (d.data() as SharedWord).targetLang === targetLang);
-}
 
 // Get topics a user has added words from
 export async function getUserTopics(

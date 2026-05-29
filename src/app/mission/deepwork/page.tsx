@@ -1,5 +1,5 @@
 'use client';
-
+import { Spinner } from '@/components/Spinner';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
@@ -11,9 +11,7 @@ import { isDue } from '@/lib/srs';
 import EncounterOverlay from '@/components/EncounterOverlay';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function DeepWorkPage() {
-  return <AuthGuard><DeepWorkMission /></AuthGuard>;
-}
+export default function DeepWorkPage() { return <AuthGuard><DeepWorkMission /></AuthGuard>; }
 
 type Phase      = 'playing' | 'done';
 type RevealStep = 'word' | 'meaning' | 'example';
@@ -21,19 +19,15 @@ type RevealStep = 'word' | 'meaning' | 'example';
 function speak(text: string, targetLang: TargetLang) {
   if (typeof window === 'undefined') return;
   window.speechSynthesis.cancel();
-  const utter    = new SpeechSynthesisUtterance(text);
-  utter.lang     = VOICE_LANG[targetLang] ?? 'ja-JP';
-  utter.rate     = 0.75;
-  const voices   = window.speechSynthesis.getVoices();
-  const langCode = VOICE_LANG[targetLang].split('-')[0];
-  const native   = voices.find(v => v.lang.startsWith(langCode));
-  if (native) utter.voice = native;
-  window.speechSynthesis.speak(utter);
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = VOICE_LANG[targetLang] ?? 'ja-JP'; u.rate = 0.75;
+  const v = window.speechSynthesis.getVoices().find(v => v.lang.startsWith(VOICE_LANG[targetLang].split('-')[0]));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
 }
 
 function DeepWorkMission() {
   const router = useRouter();
-
   const [uid, setUid]               = useState('');
   const [targetLang, setTargetLang] = useState<TargetLang>('ja');
   const [nativeLang, setNativeLang] = useState<NativeLang>('en');
@@ -44,28 +38,19 @@ function DeepWorkMission() {
   const [idx, setIdx]               = useState(0);
   const [reveal, setReveal]         = useState<RevealStep>('word');
   const [stats, setStats]           = useState({ correct: 0, wrong: 0 });
+  const [score, setScore]           = useState(0);
+  const [combo, setCombo]           = useState(0);
   const [loading, setLoading]       = useState(true);
   const [encounter, setEncounter]   = useState<Encounter | null>(null);
 
-  useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-  }, []);
-
+  useEffect(() => { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices(); }, []);
   useEffect(() => {
     return onAuth(async (user) => {
-      if (!user) return;
-      setUid(user.uid);
-      const profile = await getUserProfile(user.uid);
-      if (!profile) return;
-      setTargetLang(profile.targetLang);
-      setNativeLang(profile.nativeLang);
-      const [ws, prog] = await Promise.all([
-        getUserWords(user.uid, profile.targetLang, profile.nativeLang),
-        getProgress(user.uid, profile.targetLang, profile.nativeLang),
-      ]);
-      setAllWords(ws);
-      setProgress(prog);
+      if (!user) return; setUid(user.uid);
+      const p = await getUserProfile(user.uid); if (!p) return;
+      setTargetLang(p.targetLang); setNativeLang(p.nativeLang);
+      const [ws, prog] = await Promise.all([getUserWords(user.uid, p.targetLang, p.nativeLang), getProgress(user.uid, p.targetLang, p.nativeLang)]);
+      setAllWords(ws); setProgress(prog);
       const due  = ws.filter(w => prog[w.id] && isDue(prog[w.id]));
       const rest = ws.filter(w => !prog[w.id] || !isDue(prog[w.id]));
       setQueue([...due, ...rest.sort(() => Math.random() - 0.5)].slice(0, 20));
@@ -79,38 +64,37 @@ function DeepWorkMission() {
   async function handleRate(rating: Rating) {
     if (!current) return;
     const prev = progress[current.id];
-    if (prev) {
-      await rateWord(uid, current.id, rating, prev, targetLang, nativeLang);
-      setStats(s => ({ correct: rating !== 'wrong' ? s.correct + 1 : s.correct, wrong: rating === 'wrong' ? s.wrong + 1 : s.wrong }));
-    }
+    if (prev) await rateWord(uid, current.id, rating, prev, targetLang, nativeLang);
+    const isCorrect = rating !== 'wrong';
+    const newCombo  = isCorrect ? combo + 1 : 0;
+    const xp        = isCorrect ? (newCombo >= 5 ? 30 : newCombo >= 3 ? 20 : 10) : 0;
+    setCombo(newCombo);
+    setScore(s => s + xp);
+    setStats(s => ({ correct: isCorrect ? s.correct + 1 : s.correct, wrong: !isCorrect ? s.wrong + 1 : s.wrong }));
     const enc = rollEncounter(0.15, allWords, targetLang);
     if (enc) { setEncounter(enc); return; }
     advance();
   }
 
-  async function advance() {
+  function advance() {
     const next = idx + 1;
-    if (next >= queue.length) {
-      setPhase('done');
-      try {
-        const ag = await getAgentProfile(uid);
-        if (ag) {
-          const params = new URLSearchParams({
-            correct: String(stats.correct), wrong: String(stats.wrong), mode: 'deepwork',
-            prevSuspicion: String(ag.suspicionLevel), prevChapter: String(ag.chapter), prevStreak: String(ag.streakDays),
-          });
-          const debrief = await updateAgentAfterMission(uid, stats.correct, stats.wrong, 'deepwork');
-          if (debrief.newFragment) params.set('fragment', debrief.newFragment);
-          router.push(`/debrief?${params.toString()}`);
-        }
-      } catch { /* ignore */ }
-      return;
-    }
+    if (next >= queue.length) { setPhase('done'); endMission(); return; }
     setIdx(next); setReveal('word');
-    speak(queue[next].kanji, targetLang);
   }
 
-  function handleEncounterWin() { setEncounter(null); setStats(s => ({ ...s, correct: s.correct + 2 })); advance(); }
+  async function endMission() {
+    try {
+      const ag = await getAgentProfile(uid);
+      if (ag) {
+        const params = new URLSearchParams({ correct: String(stats.correct), wrong: String(stats.wrong), mode: 'deepwork', prevSuspicion: String(ag.suspicionLevel), prevChapter: String(ag.chapter), prevStreak: String(ag.streakDays) });
+        const debrief = await updateAgentAfterMission(uid, stats.correct, stats.wrong, 'deepwork');
+        if (debrief.newFragment) params.set('fragment', debrief.newFragment);
+        router.push(`/debrief?${params.toString()}`);
+      }
+    } catch { router.push('/mission'); }
+  }
+
+  function handleEncounterWin()  { setEncounter(null); setStats(s => ({ ...s, correct: s.correct + 2 })); advance(); }
   function handleEncounterLose() {
     setEncounter(null); setStats(s => ({ ...s, wrong: s.wrong + 1 }));
     const prev = progress[current?.id];
@@ -118,92 +102,78 @@ function DeepWorkMission() {
     advance();
   }
 
-  if (loading) return <Screen><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div></Screen>;
+  if (loading) return <Shell><div style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center' }}><Spinner size={40} color="var(--green)" /></div></Shell>;
 
   if (phase === 'done') return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/mission')} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div style={{ fontSize: '64px', marginBottom: '1rem' }}>🧠</div>
-        <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Deep work complete</h2>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>
-          {stats.correct} correct · {stats.wrong} wrong
-        </p>
-        <button onClick={() => router.push('/mission')} style={WHITE_BTN}>Debrief</button>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center' }}>
+        <div style={{ fontSize:'80px', marginBottom:'1rem', animation:'bounceIn 0.5s ease' }}>🧠</div>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'26px', fontWeight:900, color:'var(--fg)', marginBottom:'4px' }}>Deep Work Complete!</h2>
+        <p style={{ fontSize:'15px', color:'var(--muted)', fontWeight:600, marginBottom:'1.5rem' }}>{stats.correct} correct · {stats.wrong} wrong</p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginBottom:'2rem', width:'100%', maxWidth:'280px' }}>
+          <ScoreCard emoji="⭐" label="Score" value={String(score)} accent="var(--yellow)" />
+          <ScoreCard emoji="📚" label="Reviewed" value={`${queue.length}`} accent="var(--green)" />
+        </div>
+        <Spinner size={24} color="var(--green)" />
+        <p style={{ fontSize:'13px', color:'var(--muted)', marginTop:'8px', fontWeight:600 }}>Going to debrief…</p>
       </div>
-    </Screen>
+    </Shell>
   );
 
   return (
     <>
       {encounter && <EncounterOverlay encounter={encounter} allWords={allWords} onWin={handleEncounterWin} onLose={handleEncounterLose} />}
-      <Screen>
+      <Shell>
         <TopBar onBack={() => router.push('/mission')} />
 
-        {/* Progress */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', fontFamily: 'var(--font-mono)' }}>
-            <span>{idx + 1} / {queue.length}</span><span>{pct}%</span>
+        {/* Progress row */}
+        <div style={{ marginBottom:'1.25rem' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', fontWeight:700, color:'var(--muted)', marginBottom:'6px' }}>
+            <span>{idx + 1} / {queue.length}</span>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {combo >= 2 && <span style={{ color:'var(--orange)', animation:'pulse 0.8s ease-in-out infinite' }}>🔥 x{combo}</span>}
+              <span style={{ color:'var(--green-dark)' }}>⭐ {score}</span>
+            </div>
           </div>
-          <div style={{ height: '2px', background: 'rgba(255,255,255,0.1)', borderRadius: '1px' }}>
-            <div style={{ height: '2px', background: '#00e87a', borderRadius: '1px', width: `${pct}%`, transition: 'width 0.4s', boxShadow: '0 0 6px rgba(0,232,122,0.5)' }} />
-          </div>
+          <div className="progress-track"><div className="progress-fill" style={{ width:`${pct}%` }} /></div>
         </div>
 
         {/* Pills */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '1.25rem', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {current?.topic}
-            </span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {current?.type}
-            </span>
-          </div>
-          <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(239,159,39,0.12)', color: '#EF9F27', border: '1px solid rgba(239,159,39,0.2)' }}>
-            ⚡ 15% encounter
-          </span>
+        <div style={{ display:'flex', gap:'6px', marginBottom:'1rem', flexWrap:'wrap' }}>
+          <span className="pill pill-teal">{current?.topic}</span>
+          <span className="pill pill-gray">{current?.type}</span>
+          <span className="pill pill-orange" style={{ background:'var(--orange-light)', color:'#a05600', border:'2px solid #ffbe5a', fontSize:'10px' }}>⚡ 15% encounter</span>
         </div>
 
-        {/* Voice */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-          <button onClick={() => speak(current?.kanji ?? '', targetLang)} style={{ width: '38px', height: '38px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>🔊</button>
+        {/* Voice button */}
+        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'8px' }}>
+          <button onClick={() => speak(current?.kanji ?? '', targetLang)} style={{ width:'40px', height:'40px', borderRadius:'50%', border:'2.5px solid var(--border-dark)', background:'#fff', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 3px 0 var(--border-dark)', transition:'all 0.1s' }}>🔊</button>
         </div>
 
         {/* Card */}
-        <div style={{ background: 'rgba(0,0,0,0.35)', borderRadius: '20px', padding: '2.5rem 2rem', textAlign: 'center', minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.08)', position: 'relative', overflow: 'hidden' }}>
-          {/* Ghost */}
-          <div style={{ position: 'absolute', fontSize: '200px', lineHeight: 1, fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: 'rgba(0,232,122,0.04)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', userSelect: 'none' }}>
-            {current?.kanji}
-          </div>
-          <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
-            <div style={{ fontSize: '80px', lineHeight: 1, marginBottom: '12px', fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: '#fff' }}>
-              {current?.kanji}
-            </div>
-            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px' }}>
+        <div style={{ background:'#fff', border:'2.5px solid var(--border-dark)', borderRadius:'24px', boxShadow:'0 8px 0 var(--border-dark)', padding:'2rem', textAlign:'center', marginBottom:'1.5rem', position:'relative', overflow:'hidden', minHeight:'260px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.2s ease' }}>
+          <div style={{ position:'absolute', fontSize:'180px', lineHeight:1, fontFamily:'"Noto Sans JP","Noto Sans SC",serif', color:'var(--bg-secondary)', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', userSelect:'none', zIndex:0 }}>{current?.kanji}</div>
+          <div style={{ position:'relative', zIndex:1, width:'100%' }}>
+            <div style={{ fontSize:'80px', lineHeight:1, marginBottom:'12px', fontFamily:'"Noto Sans JP","Noto Sans SC",serif', color:'var(--fg)' }}>{current?.kanji}</div>
+            <p style={{ fontSize:'16px', color:'var(--muted-bright)', fontWeight:600, marginBottom:'1.25rem' }}>
               {current?.reading}{current?.romanization ? ` · ${current.romanization}` : ''}
             </p>
             {reveal === 'word' && (
-              <button onClick={() => { setReveal('meaning'); speak(current.kanji, targetLang); }} style={WHITE_BTN}>
-                Reveal meaning
+              <button className="btn btn-primary" onClick={() => { setReveal('meaning'); speak(current.kanji, targetLang); }} style={{ padding:'12px 28px' }}>
+                Reveal Meaning 👁
               </button>
             )}
             {reveal !== 'word' && (
-              <div style={{ animation: 'fadeIn 0.2s ease' }}>
-                <div style={{ fontSize: '24px', fontWeight: 600, color: '#fff', marginBottom: '14px', padding: '12px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', display: 'inline-block' }}>
+              <div style={{ animation:'bounceIn 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                <div style={{ fontSize:'24px', fontWeight:800, color:'var(--fg)', marginBottom:'14px', padding:'12px 20px', background:'var(--green-light)', borderRadius:'14px', border:'2.5px solid var(--green)', display:'inline-block', boxShadow:'0 4px 0 var(--green-dark)', fontFamily:'var(--font-display)' }}>
                   {current?.meaning}
                 </div>
-                {reveal === 'meaning' && (
-                  <div><button onClick={() => setReveal('example')} style={GHOST_BTN}>Show example →</button></div>
-                )}
+                {reveal === 'meaning' && <div><button className="btn" style={{ fontSize:'13px' }} onClick={() => setReveal('example')}>Show example →</button></div>}
                 {reveal === 'example' && current?.example && (
-                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', lineHeight: 1.7, textAlign: 'left', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <p style={{ fontFamily: '"Noto Sans JP","Noto Sans SC",serif', color: '#fff', marginBottom: current.example_translation ? '6px' : '0' }}>{current.example}</p>
-                      {current.example_translation && (
-                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '6px' }}>{current.example_translation}</p>
-                      )}
-                    </div>
+                  <div style={{ animation:'fadeIn 0.2s ease', background:'var(--bg-secondary)', borderRadius:'14px', padding:'14px 16px', textAlign:'left', border:'2px solid var(--border-dark)', marginTop:'10px' }}>
+                    <p style={{ fontSize:'14px', lineHeight:1.7, color:'var(--fg)', fontFamily:'"Noto Sans JP","Noto Sans SC",serif', marginBottom:current.example_translation ? '8px' : 0 }}>{current.example}</p>
+                    {current.example_translation && <p style={{ fontSize:'13px', color:'var(--muted)', fontStyle:'italic', borderTop:'2px solid var(--border-dark)', paddingTop:'8px' }}>{current.example_translation}</p>}
                   </div>
                 )}
               </div>
@@ -213,61 +183,56 @@ function DeepWorkMission() {
 
         {/* SRS buttons */}
         {reveal !== 'word' && (
-          <div style={{ animation: 'fadeIn 0.25s ease' }}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '10px' }}>HOW DID YOU DO?</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
+          <div style={{ animation:'fadeUp 0.25s ease' }}>
+            <p style={{ fontSize:'11px', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--muted)', textAlign:'center', marginBottom:'10px' }}>How did you do?</p>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'8px' }}>
               {([
-                { r: 'wrong', label: 'Again', sub: '1d',  bg: 'rgba(226,75,74,0.2)',  border: 'rgba(226,75,74,0.4)' },
-                { r: 'hard',  label: 'Hard',  sub: '3d',  bg: 'rgba(239,159,39,0.2)', border: 'rgba(239,159,39,0.4)' },
-                { r: 'good',  label: 'Good',  sub: '7d',  bg: 'rgba(255,255,255,0.12)',border: 'rgba(255,255,255,0.3)' },
-                { r: 'easy',  label: 'Easy',  sub: '30d', bg: 'rgba(0,232,122,0.2)',  border: 'rgba(0,232,122,0.4)' },
-              ] as { r: Rating; label: string; sub: string; bg: string; border: string }[]).map(({ r, label, sub, bg, border }) => (
-                <button key={r} onClick={() => handleRate(r)} style={{ padding: '10px 0', borderRadius: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: border, background: bg, color: '#fff', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontFamily: 'var(--font-ui)', transition: 'opacity 0.15s' }}>
-                  <span>{label}</span>
-                  <span style={{ fontSize: '11px', opacity: 0.6 }}>{sub}</span>
+                { r:'wrong', label:'Again', sub:'1d',  bg:'var(--red-light)',    border:'var(--red)',    shadow:'var(--red-dark)',    color:'var(--red-dark)' },
+                { r:'hard',  label:'Hard',  sub:'3d',  bg:'var(--orange-light)', border:'var(--orange)', shadow:'var(--orange-dark)', color:'var(--orange-dark)' },
+                { r:'good',  label:'Good',  sub:'7d',  bg:'var(--blue-light)',   border:'var(--blue)',   shadow:'var(--blue-dark)',   color:'var(--blue-dark)' },
+                { r:'easy',  label:'Easy',  sub:'30d', bg:'var(--green-light)',  border:'var(--green)',  shadow:'var(--green-dark)',  color:'var(--green-dark)' },
+              ] as { r:Rating; label:string; sub:string; bg:string; border:string; shadow:string; color:string }[]).map(({ r, label, sub, bg, border, shadow, color }) => (
+                <button key={r} onClick={() => handleRate(r)} style={{ padding:'12px 4px', borderRadius:'14px', border:`2.5px solid ${border}`, background:bg, color, fontSize:'13px', fontWeight:800, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px', boxShadow:`0 4px 0 ${shadow}`, fontFamily:'var(--font-ui)', transition:'all 0.1s ease' }}>
+                  <span>{label}</span><span style={{ fontSize:'10px', opacity:0.7, fontWeight:700 }}>{sub}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
-
         <style>{`
-          @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-          @keyframes spin { to{transform:rotate(360deg)} }
+          @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes bounceIn{0%{opacity:0;transform:scale(0.7)}60%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+          @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
         `}</style>
-      </Screen>
+      </Shell>
     </>
   );
 }
 
-function Screen({ children }: { children: React.ReactNode }) {
+function ScoreCard({ emoji, label, value, accent='var(--blue)' }: { emoji:string; label:string; value:string; accent?:string }) {
   return (
-    <main style={{
-      minHeight: '100vh',
-      background: '#040f0a',
-      backgroundImage: 'radial-gradient(ellipse at top, #0a2418 0%, #040f0a 60%, #020807 100%)',
-      display: 'flex', flexDirection: 'column',
-      padding: '1.5rem 1.25rem 2rem', fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(0,232,122,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {children}
-      </div>
-    </main>
-  );
-}
-
-function TopBar({ onBack }: { onBack: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>🧠 Deep Work</span>
-      <div style={{ width: '60px' }} />
+    <div style={{ background:'#fff', border:`2.5px solid ${accent}55`, borderRadius:'14px', padding:'12px 8px', textAlign:'center', boxShadow:`0 4px 0 ${accent}55` }}>
+      <div style={{ fontSize:'20px', marginBottom:'4px' }}>{emoji}</div>
+      <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', lineHeight:1 }}>{value}</p>
+      <p style={{ fontSize:'10px', fontWeight:700, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'3px' }}>{label}</p>
     </div>
   );
 }
-
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#040f0a', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '28px', height: '28px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column', padding:'1.5rem 1.25rem 3rem', fontFamily:'var(--font-ui)', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:'-80px', right:'-80px', width:'280px', height:'280px', borderRadius:'50%', background:'rgba(88,204,2,0.08)', filter:'blur(50px)', pointerEvents:'none' }} />
+      <div style={{ maxWidth:'520px', margin:'0 auto', width:'100%', flex:1, display:'flex', flexDirection:'column', position:'relative', zIndex:1 }}>{children}</div>
+    </main>
+  );
+}
+function TopBar({ onBack }: { onBack: () => void }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1.25rem' }}>
+      <button className="btn" style={{ fontSize:'13px', padding:'8px 14px' }} onClick={onBack}>← Back</button>
+      <span style={{ fontFamily:'var(--font-display)', fontSize:'16px', fontWeight:800, color:'var(--fg)' }}>🧠 Deep Work</span>
+      <div style={{ width:'70px' }} />
+    </div>
+  );
+}

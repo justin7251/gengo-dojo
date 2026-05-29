@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -641,18 +642,8 @@ function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => 
           from { opacity: 0; transform: translateY(4px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </main>
   );
 }
 
-function Spinner() {
-  return (
-    <div style={{
-      width: '28px', height: '28px',
-      border: '2px solid var(--border)', borderTopColor: 'var(--muted)',
-      borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto',
-    }} />
-  );
-}

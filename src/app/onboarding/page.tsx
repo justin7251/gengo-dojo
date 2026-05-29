@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/Spinner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -315,7 +316,6 @@ export default function OnboardingPage() {
       )}
 
       <style>{`
-        @keyframes spin   { to{transform:rotate(360deg)} }
         @keyframes popIn  { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
       `}</style>
     </Screen>
@@ -345,4 +345,3 @@ function Screen({ children }: { children: React.ReactNode }) {
 }
 
 const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', padding: '14px 20px', color: 'rgba(255,255,255,0.6)', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-function Spinner() { return <div style={{ width: '32px', height: '32px', border: '2px solid rgba(0,232,122,0.15)', borderTopColor: '#00e87a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }

@@ -1,18 +1,15 @@
 'use client';
-
+import { Spinner } from '@/components/Spinner';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getLeaderboard, LeaderboardEntry, getCoverColor } from '@/lib/agent';
+import { getLeaderboard, LeaderboardEntry } from '@/lib/agent';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function LeaderboardPage() {
-  return <AuthGuard><Leaderboard /></AuthGuard>;
-}
+export default function LeaderboardPage() { return <AuthGuard><Leaderboard /></AuthGuard>; }
 
 function Leaderboard() {
   const router = useRouter();
-
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [myUid, setMyUid]     = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,166 +18,99 @@ function Leaderboard() {
     return onAuth(async (user) => {
       if (!user) return;
       setMyUid(user.uid);
-      const data = await getLeaderboard(20);
-      setEntries(data);
+      setEntries(await getLeaderboard(20));
       setLoading(false);
     });
   }, []);
 
   const myRank = entries.findIndex(e => e.uid === myUid) + 1;
-
-  if (loading) {
-    return (
-      <Shell onBack={() => router.push('/mission')}>
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div>
-      </Shell>
-    );
-  }
+  const myEntry = entries.find(e => e.uid === myUid);
 
   return (
-    <Shell onBack={() => router.push('/mission')}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 600, marginBottom: '4px' }}>
-          Global Agents
-        </h2>
-        <p style={{ fontSize: '14px', color: 'var(--muted)' }}>
-          Ranked by score · streak × 10 + missions × 3
-          {myRank > 0 && ` · You are #${myRank}`}
-        </p>
+    <main style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column', alignItems:'center', padding:'1.5rem 1rem 4rem', fontFamily:'var(--font-ui)', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:'-80px', right:'-80px', width:'300px', height:'300px', borderRadius:'50%', background:'rgba(255,200,0,0.07)', filter:'blur(60px)', pointerEvents:'none' }} />
+      <div style={{ width:'100%', maxWidth:'560px', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1.5rem' }}>
+        <button className="btn" style={{ fontSize:'13px', padding:'8px 14px' }} onClick={() => router.push('/mission')}>← Back</button>
+        <span style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)' }}>🏆 Leaderboard</span>
+        <div style={{ width:'70px' }} />
       </div>
+      <div style={{ width:'100%', maxWidth:'560px' }}>
 
-      {/* My rank card */}
-      {myRank > 0 && (
-        <div style={{
-          background: 'var(--teal-light)',
-          borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--teal)',
-          borderRadius: '12px', padding: '12px 16px',
-          marginBottom: '1.5rem',
-          display: 'flex', alignItems: 'center', gap: '12px',
-        }}>
-          <span style={{ fontSize: '22px', fontWeight: 700, color: 'var(--teal-dark)', minWidth: '36px' }}>
-            #{myRank}
-          </span>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--teal-dark)' }}>
-              {entries[myRank - 1]?.codename} — Your rank
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--teal-dark)', opacity: 0.8 }}>
-              Score: {entries[myRank - 1]?.score} · {entries[myRank - 1]?.streakDays}d streak
-            </p>
+        {/* My rank card */}
+        {myRank > 0 && myEntry && (
+          <div style={{ background:'#fff3d0', border:'2.5px solid #ffd966', borderRadius:'18px', padding:'14px 18px', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'14px', boxShadow:'0 5px 0 #ffd966', animation:'bounceIn 0.5s ease both' }}>
+            <span style={{ fontFamily:'var(--font-display)', fontSize:'28px', fontWeight:900, color:'#a05600', minWidth:'44px', textAlign:'center' }}>#{myRank}</span>
+            <div style={{ flex:1 }}>
+              <p style={{ fontFamily:'var(--font-display)', fontSize:'16px', fontWeight:800, color:'#5a3800' }}>🕵️ {myEntry.codename}</p>
+              <p style={{ fontSize:'12px', color:'#a05600', fontWeight:600 }}>{myEntry.city} · {myEntry.streakDays}🔥 · {myEntry.totalMissions} missions</p>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <p style={{ fontFamily:'var(--font-display)', fontSize:'22px', fontWeight:800, color:'#5a3800' }}>{myEntry.score}</p>
+              <p style={{ fontSize:'10px', fontWeight:700, color:'#a05600', textTransform:'uppercase' }}>pts</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Entries */}
-      {entries.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--muted)', fontSize: '14px' }}>
-          No agents yet. Complete a mission to appear here.
-        </div>
-      ) : (
-        <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-          {entries.map((entry, i) => {
-            const isMe       = entry.uid === myUid;
-            const rank       = i + 1;
-            const medal      = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
-            const coverColor = getCoverColor(entry.coverStatus as 'intact' | 'compromised' | 'blown');
-
-            return (
-              <div key={entry.uid} style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 16px',
-                borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none',
-                background: isMe ? 'var(--teal-light)' : 'transparent',
-              }}>
-                {/* Rank */}
-                <div style={{ minWidth: '36px', textAlign: 'center' }}>
-                  {medal
-                    ? <span style={{ fontSize: '20px' }}>{medal}</span>
-                    : <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--muted)' }}>
-                        {rank}
-                      </span>
-                  }
-                </div>
-
-                {/* Agent info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <p style={{
-                      fontSize: '14px', fontWeight: 600,
-                      color: isMe ? 'var(--teal-dark)' : 'var(--fg)',
-                    }}>
-                      {entry.codename}
-                    </p>
-                    {isMe && (
-                      <span style={{
-                        fontSize: '10px', padding: '1px 6px', borderRadius: '99px',
-                        background: 'var(--teal)', color: '#fff',
-                      }}>
-                        you
-                      </span>
-                    )}
-                    <span style={{
-                      fontSize: '11px',
-                      color: coverColor,
-                    }}>
-                      {entry.coverStatus === 'intact' ? '✓'
-                        : entry.coverStatus === 'compromised' ? '⚠'
-                        : '✗'}
-                    </span>
+        {loading ? (
+          <div style={{ display:'flex', justifyContent:'center', padding:'3rem 0' }}><Spinner size={36} color="var(--yellow)" /></div>
+        ) : entries.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'3rem 0' }}>
+            <p style={{ fontSize:'48px', marginBottom:'1rem' }}>🏜️</p>
+            <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:'var(--fg)', marginBottom:'8px' }}>No agents yet!</p>
+            <p style={{ fontSize:'14px', color:'var(--muted)', fontWeight:600 }}>Complete a mission to appear here.</p>
+          </div>
+        ) : (
+          <div style={{ background:'#fff', border:'2.5px solid var(--border-dark)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 5px 0 var(--border-dark)' }}>
+            {entries.map((entry, i) => {
+              const isMe    = entry.uid === myUid;
+              const rank    = i + 1;
+              const medal   = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
+              const coverColor = entry.coverStatus === 'intact' ? 'var(--green)' : entry.coverStatus === 'compromised' ? 'var(--orange)' : 'var(--red)';
+              return (
+                <div key={entry.uid} style={{
+                  display:'flex', alignItems:'center', gap:'12px', padding:'13px 16px',
+                  borderBottom: i < entries.length - 1 ? '1.5px solid var(--border)' : 'none',
+                  background: isMe ? '#fff3d0' : rank <= 3 ? `${rank === 1 ? '#fffbea' : rank === 2 ? '#f8f8f8' : '#fff8f4'}` : '#fff',
+                  animation:`fadeUp 0.35s ease ${i * 0.04}s both`,
+                  borderLeft: isMe ? '4px solid #ffd966' : rank === 1 ? '4px solid #ffd700' : 'none',
+                }}>
+                  <div style={{ minWidth:'40px', textAlign:'center' }}>
+                    {medal
+                      ? <span style={{ fontSize:'24px' }}>{medal}</span>
+                      : <span style={{ fontFamily:'var(--font-display)', fontSize:'15px', fontWeight:800, color:isMe ? '#a05600' : 'var(--muted)' }}>#{rank}</span>
+                    }
                   </div>
-                  <p style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                    {entry.city} · {entry.streakDays}d streak · {entry.totalMissions} missions
-                  </p>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'2px' }}>
+                      <p style={{ fontSize:'14px', fontWeight:800, color:isMe ? '#5a3800' : 'var(--fg)' }}>🕵️ {entry.codename}</p>
+                      {isMe && <span style={{ fontSize:'10px', padding:'2px 8px', borderRadius:'99px', background:'#ffd966', color:'#5a3800', fontWeight:800 }}>YOU</span>}
+                      <span style={{ fontSize:'12px', color:coverColor, fontWeight:700 }}>
+                        {entry.coverStatus === 'intact' ? '✓' : entry.coverStatus === 'compromised' ? '⚠' : '✗'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize:'12px', color:'var(--muted)', fontWeight:600 }}>
+                      {entry.city} · {entry.streakDays}🔥 · {entry.totalMissions} missions
+                    </p>
+                  </div>
+                  <div style={{ textAlign:'right', flexShrink:0 }}>
+                    <p style={{ fontFamily:'var(--font-display)', fontSize:'18px', fontWeight:800, color:isMe ? '#5a3800' : rank <= 3 ? 'var(--fg)' : 'var(--fg-secondary)' }}>{entry.score}</p>
+                    <p style={{ fontSize:'10px', fontWeight:700, color:'var(--muted)', textTransform:'uppercase' }}>pts</p>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                {/* Score */}
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{
-                    fontSize: '16px', fontWeight: 700,
-                    color: isMe ? 'var(--teal-dark)' : 'var(--fg)',
-                  }}>
-                    {entry.score}
-                  </p>
-                  <p style={{ fontSize: '11px', color: 'var(--muted)' }}>pts</p>
-                </div>
-              </div>
-            );
-          })}
+        <div style={{ display:'flex', gap:'10px', marginTop:'1.5rem' }}>
+          <button className="btn btn-primary" style={{ flex:1 }} onClick={() => router.push('/mission')}>Play a Mission 🎯</button>
+          <button className="btn" onClick={() => router.push('/dashboard')}>Dashboard</button>
         </div>
-      )}
-
-    </Shell>
-  );
-}
-
-function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
-  return (
-    <main style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', padding: '2rem 1rem 4rem', background: 'var(--bg)',
-    }}>
-      <div style={{
-        width: '100%', maxWidth: '680px',
-        display: 'flex', alignItems: 'center', marginBottom: '1.5rem',
-      }}>
-        <button className="btn" style={{ fontSize: '13px' }} onClick={onBack}>← Back</button>
-        <span style={{ fontSize: '18px', fontWeight: 600, marginLeft: '1rem', letterSpacing: '-0.02em' }}>
-          🏆 Leaderboard
-        </span>
       </div>
-      <div style={{
-        width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
-      }}>
-        {children}
-      </div>
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
+      <style>{`
+        @keyframes bounceIn{0%{opacity:0;transform:scale(0.8)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
     </main>
   );
-}
-
-function Spinner() {
-  return <div style={{ width: '24px', height: '24px', border: '2px solid var(--border)', borderTopColor: 'var(--muted)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto' }} />;
 }
