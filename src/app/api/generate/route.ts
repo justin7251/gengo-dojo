@@ -235,6 +235,23 @@ export async function POST(req: NextRequest) {
     // ── 3. Decide what to generate ────────────────────────────────────────
     let newWordDocs: Record<string, unknown>[] = [];
 
+    // Short-circuit: all existing words already have this translation → no Groq call needed
+    if (existingWords.length > 0 && wordsNeedingTranslation.length === 0) {
+      // Just return what we already have
+      const responseWords = wordsWithTranslation.map(({ word, translation }) => ({
+        kanji:               word.kanji,
+        reading:             word.reading,
+        romanization:        word.romanization,
+        example:             word.example,
+        type:                word.type,
+        targetLang:          word.targetLang,
+        topic:               interest,
+        meaning:             translation.meaning,
+        example_translation: translation.example_translation,
+      }));
+      return NextResponse.json({ topic: interest, words: responseWords });
+    }
+
     // Case A: No words exist → generate everything
     if (existingWords.length === 0) {
       const generated = await generateFullWords(

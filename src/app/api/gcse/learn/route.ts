@@ -5,135 +5,197 @@ async function getGroq() {
   return new Groq({ apiKey: process.env.GROQ_API_KEY });
 }
 
+async function getDb() {
+  const { initializeApp, getApps, getApp, cert } = await import('firebase-admin/app');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  const app = getApps().length
+    ? getApp()
+    : initializeApp({ credential: cert({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n') }) });
+  return getFirestore(app);
+}
+
 // ── Writing rules ──────────────────────────────────────
 const WRITING_RULES = `
 STRICT WRITING RULES — a 10-12 year old must understand every word:
-
 1. Max 12 words per sentence. Short. Clear. No exceptions.
 2. Plain English FIRST. Technical term SECOND — always in brackets or after a dash.
    WRONG: "A quadratic equation is a polynomial of degree 2"
    RIGHT: "Some equations have x times x in them — these are called quadratic equations"
-3. Never assume prior knowledge. If a concept needs another concept to understand it, explain the simpler one first.
-4. Analogies must come from: food, sport, games, school, animals, phones, YouTube, family. NOT adult life.
-5. Example numbers must be small and positive first. Negatives only after the positive version is shown.
+3. Never assume prior knowledge. Explain simpler concepts first.
+4. Analogies from: food, sport, games, school, animals, phones, YouTube, family. NOT adult life.
+5. Example numbers must be small and positive first. Negatives only after positives.
 6. The BLANK answer must be a word a student could guess from context — not a technical term.
 7. The EXPLAIN prompt must be: "Explain to a friend/sibling" — never "describe the mechanism of"
 8. Tone: excited, encouraging, like a cool older sibling. Never like a textbook.
 `;
 
-// ── Topic-specific teaching notes ─────────────────────
-// These tell the AI exactly how to break down hard topics
+// ── Topic-specific notes (full coverage) ──────────────
 const TOPIC_NOTES: Record<string, string> = {
-
+  // ── MATHS ──
   'quadratic equations': `
-TEACHING NOTES FOR QUADRATIC EQUATIONS:
-
-PREREQUISITE CHECK — before explaining quadratics, briefly remind them:
-- x means "a mystery number we are trying to find"
-- x² (x squared) means x times x — NOT x times 2
-
-HOOK: Use a ball being thrown — it makes a curve, not a straight line.
-Why does it curve? That is what quadratics describe.
-
-ANALOGY: Use the squaring idea with simple numbers.
-"If x is 3, then x² is 3×3=9. If x is 4, then x² is 4×4=16.
-It grows much faster than just x. That fast growth makes curves."
-
-RULE: Keep it to ONE idea — "a quadratic has x² in it and makes a U shape".
-Do NOT show ax²+bx+c=0 to a 10-year-old. It is overwhelming.
-
-EXAMPLE: Use the SIMPLEST possible quadratic — x² = 9.
-Step 1: x times x equals 9
-Step 2: What number times itself equals 9?
-Step 3: x = 3 (because 3×3=9) or x = -3 (because -3×-3=9 too)
-Do NOT use factorising (x²-5x+6=0) — that is a separate lesson.
-
+HOOK: A ball thrown in the air makes a curve — why a curve and not a straight line?
+ANALOGY: x² is like counting tiles in a square grid — 3×3=9, not 3+3=6. It grows faster.
+RULE: "Some equations have x times x in them — called quadratic equations."
+EXAMPLE: x²=9 → what times itself equals 9? x=3 (and x=-3).
 BLANK: "x² means x ___ x" (answer: times)
+EXPLAIN: "Your friend thinks x² = x+x. Show them wrong using the number 4."
+RECALL: Same hook question — full answer about gravity causing the curve.`,
 
-EXPLAIN: "Your friend thinks x² means x+x. Show them why that is wrong with numbers."
+  'pythagoras': `
+HOOK: A ladder leaning on a wall — can you find the height without measuring?
+ANALOGY: Draw squares on each side of a right triangle — the big square area = two small squares added.
+RULE: a²+b²=c² — the longest side is always opposite the right angle.
+EXAMPLE: 3-4-5 triangle: 9+16=25, c=√25=5.
+BLANK: "The longest side is opposite the ___ angle" (answer: right)
+EXPLAIN: "Friend says you need a ruler. Are they right?"`,
 
-REMEMBER: Factorising, the quadratic formula, and completing the square are all SEPARATE lessons.
-This lesson only covers: what is x², what makes something quadratic, and the simplest solve.
-`,
-
-  'pythagoras theorem': `
-TEACHING NOTES FOR PYTHAGORAS:
-
-HOOK: "A 3m ladder leans against a wall. The bottom is 2m from the wall.
-How high up the wall does it reach? You can work this out without measuring."
-
-ANALOGY: Use a square drawn on each side of a right-angle triangle.
-"The big square's area equals the two smaller squares added together."
-Draw this as ASCII art — it is much clearer than words.
-
-RULE: "In a right-angle triangle: a² + b² = c²
-The longest side (c) is always opposite the right angle corner."
-
-EXAMPLE: A 3-4-5 triangle. Use it because 9+16=25 is easy to check.
-Step 1: 3² = 9, 4² = 16
-Step 2: 9 + 16 = 25
-Step 3: c = √25 = 5 ✓
-
-BLANK: "The longest side is always opposite the ___ angle" (answer: right)
-
-EXPLAIN: "Your friend says you need a ruler to find the missing side. Are they right?"
-`,
-
-  'trigonometry (soh cah toa)': `
-TEACHING NOTES FOR TRIGONOMETRY:
-
-HOOK: "A ramp goes up at an angle. You know how long the ramp is and the angle.
-Can you work out how high it goes without measuring?"
-
-ANALOGY: SOH CAH TOA is just three recipes. Each recipe uses two sides and an angle.
-Like a recipe card — pick the right recipe for what you know and what you want to find.
-
-RULE: Introduce the three sides FIRST with a clear picture:
-- Hypotenuse = longest side, always opposite the right angle
-- Opposite = side opposite the angle you are using
-- Adjacent = side next to the angle you are using
-Then: sin = O/H, cos = A/H, tan = O/A
-
-EXAMPLE: Simple 30-60-90 triangle with hypotenuse = 10.
-Find the opposite side using sin30 = 0.5.
-Opposite = 10 × 0.5 = 5.
-
-BLANK: "The side opposite the right angle is called the ___" (answer: hypotenuse)
-`,
+  'trigonometry': `
+HOOK: A ramp at an angle — can you find the height without measuring?
+ANALOGY: SOH CAH TOA is three recipe cards. Pick the right recipe for what you know.
+RULE: Label Hyp/Opp/Adj first. sin=O/H, cos=A/H, tan=O/A.
+EXAMPLE: sin30=0.5, hyp=10 → opp=10×0.5=5.
+BLANK: "The side opposite the right angle is called the ___" (answer: hypotenuse)`,
 
   'percentages': `
-TEACHING NOTES FOR PERCENTAGES:
+HOOK: 80% health vs 40/50 health — which is better?
+ANALOGY: Per cent = out of 100 slices of pie.
+RULE: "To find X% of something: divide by 100, multiply by X."
+EXAMPLE: 10% of 80=8, 30% of 80=24 (three lots of 10%).
+BLANK: "Per cent means out of ___" (answer: 100)`,
 
-HOOK: "A game says you have 80% health. Another game says you have 40 out of 50 health.
-Which one is doing better?"
+  'probability': `
+HOOK: Flip a coin 10 times, get heads 8 times — was that fair?
+ANALOGY: Probability is just a fraction — how many ways can it happen ÷ total possible outcomes.
+RULE: P = favourable ÷ total. Always between 0 (impossible) and 1 (certain).
+EXAMPLE: Roll a dice. P(3)=1/6. P(even)=3/6=½.
+BLANK: "Probability is always between 0 and ___" (answer: 1)`,
 
-ANALOGY: Per cent means "out of 100". Like a pie cut into 100 slices.
-50% = 50 slices = half the pie.
+  'algebra': `
+HOOK: I think of a number, double it, add 3, get 11 — what was my number?
+ANALOGY: x is a mystery box. Algebra is opening the box step by step.
+RULE: Do the same thing to both sides of the equals sign.
+EXAMPLE: 2x+3=11 → subtract 3 → 2x=8 → divide by 2 → x=4.
+BLANK: "In an equation, x stands for an ___ number" (answer: unknown)`,
 
-RULE: To find a percentage of something: divide by 100, then multiply.
-"Find 30% of 200: 200 ÷ 100 = 2, then 2 × 30 = 60"
+  'simultaneous equations': `
+HOOK: Two friends order food. Their total prices tell you what each item costs — how?
+ANALOGY: Two clues in a mystery. Neither clue alone solves it. Together they do.
+RULE: Make one variable equal in both equations, then subtract to eliminate it.
+EXAMPLE: x+y=5, x-y=1 → add them → 2x=6 → x=3, y=2.
+BLANK: "Simultaneous equations have ___ unknowns" (answer: two)`,
 
-EXAMPLE: Build up from simple to applied.
-Step 1: 50% of 80 = 40 (half)
-Step 2: 10% of 80 = 8 (divide by 10)
-Step 3: 30% of 80 = 24 (three lots of 10%)
-`,
+  'inequalities': `
+HOOK: Speed limit is 70mph — all these speeds are allowed: 60, 65, 69. What about 70? 71?
+ANALOGY: A bouncer at a club — must be over 18. Not exactly 18. Greater than.
+RULE: < means less than, > means greater than. Flip the sign when multiplying by a negative.
+EXAMPLE: 2x<10 → x<5. Numbers less than 5 work: 4, 3, 2...
+BLANK: "The symbol < means ___ than" (answer: less)`,
 
-  'probability basics': `
-TEACHING NOTES FOR PROBABILITY:
+  'sequences': `
+HOOK: 2, 4, 6, 8 — what comes next? What about 3, 6, 12, 24?
+ANALOGY: A staircase (add the same each time) vs a snowball (multiply each time).
+RULE: Arithmetic: add same number each time. Geometric: multiply same number each time.
+EXAMPLE: nth term of 3,7,11,15 = 4n-1. Check: n=1 gives 4-1=3 ✓.
+BLANK: "In an arithmetic sequence you always ___ the same amount" (answer: add)`,
 
-HOOK: "You flip a coin 10 times. You get heads 8 times. Was that fair?"
+  'standard form': `
+HOOK: The sun is 150,000,000,000 metres away — how do scientists write this tidily?
+ANALOGY: Like a phone's abbreviations — 1.5B instead of 1,500,000,000.
+RULE: A×10ⁿ where A is between 1 and 10. n is the number of places the decimal moves.
+EXAMPLE: 3,400,000 = 3.4×10⁶. 0.00056 = 5.6×10⁻⁴.
+BLANK: "In standard form, the first number must be between 1 and ___" (answer: 10)`,
 
-ANALOGY: Probability is just a fraction. How many ways can this happen?
-Out of how many things could happen total?
+  // ── SCIENCE — BIOLOGY ──
+  'cell biology': `
+HOOK: Why do plants look green? Why do animals need to eat but plants don't?
+ANALOGY: A cell is like a tiny city — each part has a specific job.
+RULE: Animal cells: nucleus, cell membrane, cytoplasm, mitochondria, ribosomes.
+Plant cells add: cell wall, chloroplasts, vacuole.
+EXAMPLE: Mitochondria = power station. Chloroplast = solar panel.
+BLANK: "The ___ controls what enters and leaves the cell" (answer: membrane)`,
 
-RULE: Probability = number of ways it can happen ÷ total outcomes
-Always between 0 (impossible) and 1 (certain).
+  'photosynthesis': `
+HOOK: A plant in a dark room — will it survive? Why not?
+ANALOGY: A plant is a solar-powered food factory.
+RULE: carbon dioxide + water → glucose + oxygen (needs light energy, chlorophyll).
+EXAMPLE: More light = more photosynthesis, up to a limit (light saturation).
+BLANK: "Photosynthesis happens in the ___" (answer: chloroplast)`,
 
-EXAMPLE: Rolling a dice.
-P(getting a 3) = 1/6 — only one 3, six possible outcomes.
-P(getting an even number) = 3/6 = 1/2 — three even numbers (2,4,6).
-`,
+  'respiration': `
+HOOK: Why do you breathe faster when you exercise?
+ANALOGY: Respiration is like burning fuel in a car — release energy stored in food.
+RULE: Aerobic: glucose+oxygen→CO₂+water+energy. Anaerobic: glucose→lactic acid+energy (less).
+BLANK: "Aerobic respiration requires ___" (answer: oxygen)`,
+
+  'homeostasis': `
+HOOK: You go outside in -5°C — why don't you freeze?
+ANALOGY: Your body has a thermostat, just like a heating system.
+RULE: Homeostasis keeps internal conditions constant: temperature, blood sugar, water.
+BLANK: "Normal human body temperature is ___ degrees C" (answer: 37)`,
+
+  'genetics': `
+HOOK: You look like your parents — but not exactly. Why?
+ANALOGY: DNA is a recipe book. Genes are individual recipes.
+RULE: Dominant allele (capital) always shows. Recessive (lowercase) only shows if both copies present.
+BLANK: "Each person inherits ___ alleles for each gene" (answer: two)`,
+
+  // ── SCIENCE — CHEMISTRY ──
+  'atomic structure': `
+HOOK: Everything around you is made of the same tiny building blocks — what are they?
+ANALOGY: An atom is like a tiny solar system — nucleus in the middle, electrons orbiting.
+RULE: Protons and neutrons in nucleus. Electrons in shells. Protons=atomic number.
+EXAMPLE: Carbon has 6 protons, 6 neutrons, 6 electrons.
+BLANK: "The atomic number tells you the number of ___" (answer: protons)`,
+
+  'bonding': `
+HOOK: Why does water flow but salt forms solid crystals?
+ANALOGY: Ionic bonding = giving away your keys (transfer electrons). Covalent = sharing headphones.
+RULE: Ionic: metal+non-metal, transfer electrons, forms lattice. Covalent: non-metals, share electrons.
+BLANK: "Ionic bonds form between a ___ and a non-metal" (answer: metal)`,
+
+  'rates of reaction': `
+HOOK: Why does warm milk go off faster than cold milk?
+ANALOGY: Reaction rate = how often cars collide at an intersection.
+RULE: More collisions = faster rate. Increase: concentration, temperature, surface area, catalyst.
+BLANK: "A catalyst ___ the rate of reaction" (answer: increases)`,
+
+  'organic chemistry': `
+HOOK: Plastic, petrol, and alcohol — what do they have in common?
+ANALOGY: Carbon atoms are like LEGO — they snap together in millions of ways.
+RULE: Alkanes: CₙH₂ₙ₊₂. Alkenes: CₙH₂ₙ (double bond). Alkenes are unsaturated.
+BLANK: "Alkenes contain a carbon-carbon double ___" (answer: bond)`,
+
+  // ── SCIENCE — PHYSICS ──
+  'forces': `
+HOOK: A book sits on a table. Is anything pushing on it? Is it moving? Why not?
+ANALOGY: Forces are like a tug of war — balanced forces = no movement.
+RULE: Resultant force = 0 → object stays still or constant velocity. F=ma.
+BLANK: "When forces are balanced, the resultant force is ___" (answer: zero)`,
+
+  'energy': `
+HOOK: A battery goes flat — where did the energy go?
+ANALOGY: Energy is like money — it changes form but never disappears.
+RULE: Energy cannot be created or destroyed — only transferred or stored.
+EXAMPLE: KE=½mv². GPE=mgh. Efficiency = useful output ÷ total input × 100.
+BLANK: "Energy is measured in ___" (answer: joules)`,
+
+  'electricity': `
+HOOK: Why do you get a shock touching a metal door handle after walking on carpet?
+ANALOGY: Current is like water flowing through pipes. Voltage is the water pressure.
+RULE: V=IR (Ohms law). Series: same current, voltages add. Parallel: same voltage, currents add.
+BLANK: "V = I × ___" (answer: R)`,
+
+  'waves': `
+HOOK: How does your phone get signal inside a building with no windows?
+ANALOGY: Waves are like ripples in a pond — they spread out from the source.
+RULE: wave speed = frequency × wavelength. Transverse vs longitudinal.
+BLANK: "Wave speed = frequency × ___" (answer: wavelength)`,
+
+  'magnetism': `
+HOOK: Why does a compass always point north?
+ANALOGY: Magnetic field lines are like invisible arrows around a magnet.
+RULE: Like poles repel, unlike attract. Field lines go N→S outside the magnet.
+BLANK: "Like poles ___ each other" (answer: repel)`,
 };
 
 function getTopicNotes(topic: string): string {
@@ -144,154 +206,90 @@ function getTopicNotes(topic: string): string {
   return '';
 }
 
-function buildPrompt(subject: string, topic: string): string {
-  const topicNotes = getTopicNotes(topic);
-
-  return `You are a brilliant teacher explaining "${topic}" (${subject}) to a 10-12 year old student who has never seen this topic.
+// ── Single-call prompt: lesson + quickCheck together ──
+function buildCombinedPrompt(subject: string, topic: string): string {
+  const notes = getTopicNotes(topic);
+  return `You are a brilliant teacher explaining "${topic}" (${subject}) to a 10-12 year old student.
 ${WRITING_RULES}
-${topicNotes ? `\n${topicNotes}\n` : ''}
+${notes ? `\nTEACHING NOTES:\n${notes}\n` : ''}
 
-Generate exactly 7 lesson cards: HOOK → ANALOGY → RULE → EXAMPLE → BLANK → EXPLAIN → RECALL
+Generate a complete lesson object with:
+1. Exactly 7 lesson cards: HOOK → ANALOGY → RULE → EXAMPLE → BLANK → EXPLAIN → RECALL
+2. Exactly 3 quick-check questions after the lesson
 
-HOOK: One surprising question. 3 natural wrong guesses. No answer yet. Max 15 words.
-ANALOGY: Everyday comparison from a child's world. One sentence + optional ASCII visual.
-RULE: Plain English version (1 sentence) then technical name. Max 20 words total.
-EXAMPLE: One concrete example, 3 steps, max 10 words each. Use small positive numbers first.
-BLANK: One sentence, one simple guessable word blanked with ___. Not a technical term.
-EXPLAIN: Ask them to explain to a friend/sibling. Give a fun real scenario.
-RECALL: Same question as HOOK. Full plain-English answer at the end.
+LESSON CARD FORMATS:
+HOOK:    { type:"HOOK",    question, guesses:[3 natural wrong guesses] }
+ANALOGY: { type:"ANALOGY", analogy, connection, visual? }
+RULE:    { type:"RULE",    rule, formula? }
+EXAMPLE: { type:"EXAMPLE", scenario, steps:[3 steps max 10 words each] }
+BLANK:   { type:"BLANK",   sentence(with ___), answer(simple guessable word), hint }
+EXPLAIN: { type:"EXPLAIN", prompt("Explain to a friend…"), modelAnswer }
+RECALL:  { type:"RECALL",  question(same as HOOK), answer(full plain-English) }
+
+QUICK-CHECK FORMATS:
+Q1: multipleChoice  { type, question, choices:[4], correctIndex, explanation }
+Q2: fillBlank       { type, sentence(with ___), answer, explanation }
+Q3: shortAnswer     { type, question, modelAnswer, keywords:[3-5] }
 
 Return ONLY valid JSON:
 {
   "topic": "${topic}",
   "subject": "${subject}",
-  "cards": [
-    {
-      "type": "HOOK",
-      "question": "Why does a thrown ball make a curve shape instead of going in a straight line?",
-      "guesses": [
-        "Because the wind pushes it sideways",
-        "Because gravity pulls it down as it moves",
-        "Because the ball spins around"
-      ]
-    },
-    {
-      "type": "ANALOGY",
-      "analogy": "It is like counting tiles in a square — 3 tiles wide and 3 tiles tall means 9 tiles total, not 6",
-      "connection": "x squared means x groups of x — it grows much faster than just adding x",
-      "visual": "  x = 3\\n  x² = 3 × 3 = 9\\n  (NOT 3 + 3 = 6)"
-    },
-    {
-      "type": "RULE",
-      "rule": "Some equations have x times x in them. That makes them curve when you draw them.",
-      "formula": "These are called quadratic equations"
-    },
-    {
-      "type": "EXAMPLE",
-      "scenario": "Find x when x² = 9",
-      "steps": [
-        "x times x equals 9",
-        "What number times itself makes 9?",
-        "x = 3 because 3 × 3 = 9"
-      ]
-    },
-    {
-      "type": "BLANK",
-      "sentence": "x² means x ___ x",
-      "answer": "times",
-      "hint": "What maths operation does squared mean?"
-    },
-    {
-      "type": "EXPLAIN",
-      "prompt": "Your friend thinks x² and x+x are the same thing. Show them why they are wrong using the number 4.",
-      "modelAnswer": "x² means x times x. So if x is 4, then x² is 4 times 4 which is 16. But x+x with 4 is just 4+4 which is 8. They are very different!"
-    },
-    {
-      "type": "RECALL",
-      "question": "Why does a thrown ball make a curve shape instead of going in a straight line?",
-      "answer": "Gravity pulls the ball down while it moves forward. This makes it follow a curved path — a U shape. Maths can describe this curved path using a quadratic equation, which has x times x in it."
-    }
-  ]
+  "cards": [...7 cards...],
+  "quickCheck": [...3 questions...]
 }
 
-FINAL CHECK before returning: Read every sentence. Could a 10-year-old read it out loud and understand it immediately? If not — simplify it.`;
+FINAL CHECK: every sentence readable by a 10-year-old. Plain English first, technical term second.`;
+}
+
+// ── Cache key ──────────────────────────────────────────
+function cacheKey(subject: string, topic: string): string {
+  return `${subject}__${topic}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { subject, topic } = await req.json() as { subject: string; topic: string };
+    if (!subject || !topic) return NextResponse.json({ error: 'Missing subject or topic' }, { status: 400 });
 
-    if (!subject || !topic) {
-      return NextResponse.json({ error: 'Missing subject or topic' }, { status: 400 });
+    const db  = await getDb();
+    const key = cacheKey(subject, topic);
+    const ref = db.collection('gcse_lesson_cache').doc(key);
+
+    // ── Serve from cache if exists ─────────────────────
+    const cached = await ref.get();
+    if (cached.exists) {
+      const data = cached.data()!;
+      // Refresh cache weekly
+      const age = Date.now() - (data.cachedAt ?? 0);
+      if (age < 7 * 24 * 60 * 60 * 1000) {
+        return NextResponse.json({ ...data.lesson, _cached: true });
+      }
     }
 
-    const client = await getGroq();
+    // ── Generate lesson + quickCheck in ONE call ───────
+    const client     = await getGroq();
     const completion = await client.chat.completions.create({
-      model:     'llama-3.3-70b-versatile',
-      max_tokens: 2000,
+      model:           'llama-3.3-70b-versatile',
+      max_tokens:      3000,
       response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: buildPrompt(subject, topic) }],
+      messages:        [{ role: 'user', content: buildCombinedPrompt(subject, topic) }],
     });
 
     const raw    = completion.choices[0].message.content ?? '{}';
     const parsed = JSON.parse(raw);
 
-
     if (!parsed.cards?.length) {
       return NextResponse.json({ error: 'Invalid lesson generated' }, { status: 502 });
     }
 
-    // Generate 3 quick-check questions based on the lesson
-    const lessonContext = JSON.stringify(
-      parsed.cards.map((c: Record<string, unknown>) => ({
-        type: c.type, rule: c.rule, sentence: c.sentence, question: c.question,
-      }))
-    );
+    // Ensure quickCheck array exists
+    if (!Array.isArray(parsed.quickCheck)) parsed.quickCheck = [];
 
-    const qcCompletion = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 800,
-      response_format: { type: 'json_object' },
-      messages: [{
-        role: 'user',
-        content: `Based on a lesson about "${topic}" (${subject}) for a 10-12 year old, generate 3 quick-check questions.
-Lesson context: ${lessonContext}
+    // ── Cache the result ───────────────────────────────
+    await ref.set({ lesson: parsed, cachedAt: Date.now(), subject, topic });
 
-Q1: Multiple choice (4 options, test core idea)
-Q2: Fill in the blank (one simple word)
-Q3: Short answer (explain to a friend)
-
-Plain English only. Max 12 words per sentence.
-
-Return ONLY valid JSON:
-{
-  "quickCheck": [
-    {
-      "type": "multipleChoice",
-      "question": "Short simple question here?",
-      "choices": ["Correct answer", "Wrong option 1", "Wrong option 2", "Wrong option 3"],
-      "correctIndex": 0,
-      "explanation": "One sentence explaining why this is right"
-    },
-    {
-      "type": "fillBlank",
-      "sentence": "Sentence with one ___ word missing",
-      "answer": "word",
-      "explanation": "One sentence explanation"
-    },
-    {
-      "type": "shortAnswer",
-      "question": "Explain this to a friend — what would you say?",
-      "modelAnswer": "Simple 2-3 sentence model answer.",
-      "keywords": ["key", "words"]
-    }
-  ]
-}`,
-      }],
-    });
-
-    const qcParsed = JSON.parse(qcCompletion.choices[0].message.content ?? '{}');
-    return NextResponse.json({ ...parsed, quickCheck: qcParsed.quickCheck ?? [] });
+    return NextResponse.json(parsed);
 
   } catch (err) {
     console.error('[gcse/learn]', err);

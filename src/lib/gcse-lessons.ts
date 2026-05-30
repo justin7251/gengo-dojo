@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { LessonCard } from '@/components/GCSELessonCard';
+import { QuickCheckQuestion } from '@/components/GCSEQuickCheck';
 
 // ── Types ──────────────────────────────────────────────
 export interface GCSELesson {
@@ -13,7 +14,7 @@ export interface GCSELesson {
   topic:       string;
   topicSlug:   string;
   cards:       LessonCard[];
-  quickCheck?: unknown[];
+  quickCheck?: QuickCheckQuestion[];
   published:   boolean;
   createdAt:   Timestamp | null;
   updatedAt:   Timestamp | null;
