@@ -1,248 +1,94 @@
 'use client';
-
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 
-export default function GCSEMathsPage() {
-  return <AuthGuard><GCSEMathsHub /></AuthGuard>;
-}
+export default function GCSEMathsPage() { return <AuthGuard><GCSEMathsHub /></AuthGuard>; }
 
 const SECTIONS = [
-  {
-    id:     'algebra',
-    emoji:  '🔣',
-    label:  'Algebra',
-    desc:   'Equations, inequalities, sequences, quadratics, simultaneous equations.',
-    topics: ['Linear equations', 'Quadratics', 'Sequences', 'Inequalities', 'Functions'],
-    color:  '#378ADD',
-    dim:    'rgba(55,138,221,0.12)',
-    border: 'rgba(55,138,221,0.3)',
-    route:  '/gcse/maths/algebra',
-    marks:  '~30% of paper',
-  },
-  {
-    id:     'geometry',
-    emoji:  '📐',
-    label:  'Geometry & Measures',
-    desc:   'Angles, circles, trigonometry, Pythagoras, vectors, transformations.',
-    topics: ['Pythagoras', 'Trigonometry', 'Circle theorems', 'Vectors', 'Area & volume'],
-    color:  '#7F77DD',
-    dim:    'rgba(127,119,221,0.12)',
-    border: 'rgba(127,119,221,0.3)',
-    route:  '/gcse/maths/geometry',
-    marks:  '~25% of paper',
-  },
-  {
-    id:     'statistics',
-    emoji:  '📊',
-    label:  'Statistics & Probability',
-    desc:   'Data handling, averages, probability, cumulative frequency, box plots.',
-    topics: ['Mean/median/mode', 'Probability', 'Cumulative frequency', 'Histograms', 'Correlation'],
-    color:  '#00e87a',
-    dim:    'rgba(0,232,122,0.1)',
-    border: 'rgba(0,232,122,0.25)',
-    route:  '/gcse/maths/statistics',
-    marks:  '~15% of paper',
-  },
-  {
-    id:     'number',
-    emoji:  '🔢',
-    label:  'Number',
-    desc:   'Fractions, percentages, ratio, standard form, surds, indices.',
-    topics: ['Fractions & decimals', 'Percentages', 'Ratio & proportion', 'Standard form', 'Surds'],
-    color:  '#EF9F27',
-    dim:    'rgba(239,159,39,0.1)',
-    border: 'rgba(239,159,39,0.25)',
-    route:  '/gcse/maths/number',
-    marks:  '~25% of paper',
-  },
-  {
-    id:     'practice',
-    emoji:  '📝',
-    label:  'Practice Papers',
-    desc:   'Full timed mock papers. AI generates questions and marks step-by-step working.',
-    topics: ['Paper 1 (non-calc)', 'Paper 2 (calc)', 'Paper 3 (calc)', 'Topic mixes'],
-    color:  '#D4537E',
-    dim:    'rgba(212,83,126,0.12)',
-    border: 'rgba(212,83,126,0.3)',
-    route:  '/gcse/maths/practice',
-    marks:  '3 papers · 240 marks',
-  },
+  { id: 'algebra',    emoji: '🔣', label: 'Algebra',                desc: 'Equations, inequalities, sequences, quadratics, simultaneous equations.', topics: ['Linear equations','Quadratics','Sequences','Inequalities','Functions'],        color: 'var(--blue)',   bg: 'var(--blue-light)',   route: '/gcse/maths/algebra',    marks: '~30% of paper' },
+  { id: 'geometry',   emoji: '📐', label: 'Geometry & Measures',    desc: 'Angles, circles, trig, Pythagoras, vectors, transformations.',               topics: ['Pythagoras','Trigonometry','Circle theorems','Vectors','Area & volume'],     color: 'var(--purple)', bg: 'var(--purple-light)', route: '/gcse/maths/geometry',   marks: '~25% of paper' },
+  { id: 'statistics', emoji: '📊', label: 'Statistics & Probability',desc: 'Data handling, averages, probability, cumulative frequency, box plots.',     topics: ['Mean/median/mode','Probability','Cumulative freq','Histograms','Correlation'], color: 'var(--green)', bg: 'var(--green-light)', route: '/gcse/maths/statistics', marks: '~15% of paper' },
+  { id: 'number',     emoji: '🔢', label: 'Number',                 desc: 'Fractions, percentages, ratio, standard form, surds, indices.',              topics: ['Fractions','Percentages','Ratio','Standard form','Surds'],                 color: 'var(--orange)', bg: 'var(--orange-light)', route: '/gcse/maths/number',     marks: '~25% of paper' },
+  { id: 'practice',   emoji: '📝', label: 'Practice Papers',        desc: 'Full timed mock papers. AI generates and marks step-by-step working.',       topics: ['Paper 1 (non-calc)','Paper 2 (calc)','Paper 3 (calc)','Topic mixes'],      color: 'var(--pink)',   bg: 'var(--purple-light)', route: '/gcse/maths/practice',   marks: '3 papers · 240 marks' },
 ];
 
 function GCSEMathsHub() {
   const router = useRouter();
-
   return (
-    <Screen>
-      {/* Back */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/gcse')} style={GHOST_BTN}>← Subjects</button>
+    <Shell>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <button className="btn" style={{ fontSize: '13px', padding: '8px 14px' }} onClick={() => router.push('/gcse')}>← Subjects</button>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--fg)' }}>📐 Mathematics</span>
+        <div style={{ width: '80px' }} />
       </div>
+      <p style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 600, marginBottom: '1rem' }}>
+        AQA · Higher &amp; Foundation · All three papers covered.
+      </p>
 
-      {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '28px' }}>📐</span>
-          <div>
-            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)' }}>
-              AQA · YEAR 11
-            </p>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
-              Mathematics
-            </h1>
-          </div>
-        </div>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-          AI-powered maths practice. Step-by-step worked solutions.
-          Higher and Foundation tier. All three papers covered.
-        </p>
-      </div>
-
-      {/* Paper breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '1.5rem' }}>
-        {[
-          { label: 'Paper 1', sub: 'Non-calculator', color: '#378ADD' },
-          { label: 'Paper 2', sub: 'Calculator', color: '#7F77DD' },
-          { label: 'Paper 3', sub: 'Calculator', color: '#00e87a' },
-        ].map(p => (
-          <div key={p.label} style={{
-            background: 'rgba(255,255,255,0.04)', borderRadius: '10px',
-            padding: '10px', border: `1px solid ${p.color}25`, textAlign: 'center',
-          }}>
-            <p style={{ fontSize: '12px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>{p.label}</p>
-            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{p.sub}</p>
+      {/* Paper pills */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '1.25rem' }}>
+        {[{ l: 'Paper 1', sub: 'Non-calculator', c: 'var(--blue)' }, { l: 'Paper 2', sub: 'Calculator', c: 'var(--purple)' }, { l: 'Paper 3', sub: 'Calculator', c: 'var(--green)' }].map(p => (
+          <div key={p.l} style={{ background: '#fff', borderRadius: '12px', padding: '10px', border: `2.5px solid ${p.c}55`, textAlign: 'center', boxShadow: `0 3px 0 ${p.c}55` }}>
+            <p style={{ fontSize: '12px', fontWeight: 800, color: 'var(--fg)', marginBottom: '2px' }}>{p.l}</p>
+            <p style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 600 }}>{p.sub}</p>
           </div>
         ))}
       </div>
 
-      <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', marginBottom: '1.25rem' }} />
+      {/* Learn first banner */}
+      <button onClick={() => router.push('/gcse/maths/learn')} className="gcse-card-btn"
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '16px', cursor: 'pointer', border: '2.5px solid var(--purple)55', background: 'var(--purple-light)', fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%', marginBottom: '1rem', boxShadow: '0 5px 0 var(--purple-dark)55' }}>
+        <span style={{ fontSize: '28px' }}>📚</span>
+        <div>
+          <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--fg)', fontFamily: 'var(--font-display)' }}>Learn a topic first</p>
+          <p style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>7 interactive lesson cards before you practise</p>
+        </div>
+        <span style={{ marginLeft: 'auto', fontSize: '20px', color: 'var(--purple)', fontWeight: 900 }}>›</span>
+      </button>
 
-      {/* Section cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/gcse/maths/learn')} style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          padding: '14px 16px', borderRadius: '14px', cursor: 'pointer',
-          border: '1px solid rgba(127,119,221,0.4)',
-          background: 'rgba(127,119,221,0.12)',
-          fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
-          marginBottom: '1rem',
-        }}>
-          <span style={{ fontSize: '24px' }}>📚</span>
-          <div>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>Learn a topic first</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>7 swipeable lesson cards before you practise</p>
-          </div>
-          <span style={{ marginLeft: 'auto', fontSize: '18px', color: 'rgba(127,119,221,0.7)' }}>›</span>
-        </button>
-        {SECTIONS.map(s => (
-          <button
-            key={s.id}
-            onClick={() => router.push(s.route)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '14px',
-              padding: '14px 16px', borderRadius: '14px', cursor: 'pointer',
-              border: `1px solid ${s.border}`, background: s.dim,
-              fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
-              transition: 'all 0.15s',
-            }}
-          >
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0,
-              background: `${s.color}20`, border: `1px solid ${s.color}35`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
-            }}>
-              {s.emoji}
-            </div>
+        {SECTIONS.map((s, i) => (
+          <button key={s.id} onClick={() => router.push(s.route)} className="gcse-card-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', borderRadius: '16px', cursor: 'pointer', border: `2.5px solid ${s.color}55`, background: '#fff', fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%', boxShadow: `0 5px 0 ${s.color}55`, animation: `bounceIn 0.4s ease ${i * 0.06}s both` }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0, background: s.bg, border: `2.5px solid ${s.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>{s.emoji}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>{s.label}</span>
-                <span style={{
-                  fontSize: '10px', padding: '2px 6px', borderRadius: '99px',
-                  background: `${s.color}18`, color: `${s.color}bb`,
-                  border: `1px solid ${s.color}28`,
-                }}>
-                  {s.marks}
-                </span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800, color: 'var(--fg)' }}>{s.label}</span>
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', background: s.bg, color: s.color, border: `2px solid ${s.color}55`, fontWeight: 700 }}>{s.marks}</span>
               </div>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4, marginBottom: '6px' }}>
-                {s.desc}
-              </p>
+              <p style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: 1.4, marginBottom: '6px', fontWeight: 600 }}>{s.desc}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {s.topics.map(t => (
-                  <span key={t} style={{
-                    fontSize: '10px', padding: '2px 7px', borderRadius: '99px',
-                    background: `${s.color}10`, color: `${s.color}80`,
-                    border: `1px solid ${s.color}18`,
-                  }}>
-                    {t}
-                  </span>
-                ))}
+                {s.topics.map(t => <span key={t} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', background: s.bg, color: s.color, border: `1.5px solid ${s.color}40`, fontWeight: 700 }}>{t}</span>)}
               </div>
             </div>
-            <span style={{ fontSize: '18px', color: `${s.color}90`, flexShrink: 0 }}>›</span>
+            <span style={{ fontSize: '18px', color: s.color, flexShrink: 0, fontWeight: 900 }}>›</span>
           </button>
         ))}
       </div>
 
-      {/* Tier selector info */}
-      <div style={{
-        padding: '14px', background: 'rgba(255,255,255,0.03)',
-        borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)',
-      }}>
-        <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>
-          TIER INFORMATION
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {[
-            { tier: 'Higher', grades: 'Grades 4–9', desc: 'Full content including surds, vectors, circle theorems' },
-            { tier: 'Foundation', grades: 'Grades 1–5', desc: 'Core content up to grade 5 topics' },
-          ].map(t => (
-            <div key={t.tier} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <span style={{
-                fontSize: '11px', fontWeight: 700, color: '#378ADD',
-                minWidth: '70px', fontFamily: 'var(--font-mono)', marginTop: '1px',
-              }}>
-                {t.tier}
-              </span>
-              <div>
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{t.grades}</span>
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>— {t.desc}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Tier info */}
+      <div style={{ background: '#fff', borderRadius: '14px', border: '2.5px solid var(--border-dark)', padding: '14px', boxShadow: '0 4px 0 var(--border-dark)' }}>
+        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Tier Information</p>
+        {[{ t: 'Higher', g: 'Grades 4–9', d: 'Full content inc. surds, vectors, circle theorems' }, { t: 'Foundation', g: 'Grades 1–5', d: 'Core content up to grade 5 topics' }].map(t => (
+          <div key={t.t} style={{ display: 'flex', gap: '10px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--blue)', minWidth: '80px' }}>{t.t}</span>
+            <span style={{ fontSize: '12px', color: 'var(--fg-secondary)', fontWeight: 600 }}>{t.g} — {t.d}</span>
+          </div>
+        ))}
       </div>
-    </Screen>
+      <style>{`
+        @keyframes bounceIn { 0%{opacity:0;transform:scale(0.9)} 60%{transform:scale(1.03)} 100%{opacity:1;transform:scale(1)} }
+        .gcse-card-btn:hover  { transform: translateY(-2px); }
+        .gcse-card-btn:active { transform: translateY(3px); box-shadow: none !important; }
+      `}</style>
+    </Shell>
   );
 }
-
-function Screen({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{
-      minHeight: '100vh',
-      background: '#050a18',
-      backgroundImage: `
-        radial-gradient(ellipse at top left, #0a1535 0%, #050a18 60%, #020810 100%),
-        linear-gradient(rgba(55,138,221,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(55,138,221,0.025) 1px, transparent 1px)
-      `,
-      backgroundSize: 'auto, 40px 40px, 40px 40px',
-      padding: '1.5rem 1.25rem 3rem',
-      fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%' }}>
-        {children}
-      </div>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '1.5rem 1.25rem 4rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(28,176,246,0.07)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: '560px', margin: '0 auto', width: '100%' }}>{children}</div>
     </main>
   );
 }
-
-const GHOST_BTN: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.07)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: '8px', padding: '7px 14px',
-  color: 'rgba(255,255,255,0.65)', fontSize: '13px',
-  cursor: 'pointer', fontFamily: 'var(--font-ui)',
-};
