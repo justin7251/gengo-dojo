@@ -3,7 +3,7 @@ import { Spinner } from '@/components/Spinner';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
-import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
+import { getUserProfile, getUserWords, getProgress, rateWord, markDailyTask } from '@/lib/firestore';
 import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -70,6 +70,7 @@ function Quiz() {
 
   async function handleAnswer(choice: string) {
     if (answerState !== 'unanswered' || advancing) return;
+    if (idx === 0) markDailyTask(uid, 'quiz').catch(() => {});
     const isCorrect = choice === current.correct;
     setSelected(choice); setAnswerState(isCorrect ? 'correct' : 'wrong');
     setScore(s => ({ correct: isCorrect ? s.correct + 1 : s.correct, wrong: !isCorrect ? s.wrong + 1 : s.wrong }));

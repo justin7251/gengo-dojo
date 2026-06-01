@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
 import { getAgentProfile, updateAgentAfterMission } from '@/lib/agent';
+import { markDailyTask } from '@/lib/firestore';
 import { Word, Progress, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -64,6 +65,7 @@ function BrainDeadMission() {
     if (pair?.matched) return;
 
     if (selectedKanji === wordId) {
+      if (pairs.filter(p => p.matched).length === 0) markDailyTask(uid, 'mission').catch(() => {});
       const newPairs = pairs.map(p => p.wordId === wordId ? { ...p, matched: true } : p);
       setPairs(newPairs);
       setCorrectFlash(wordId); setTimeout(() => setCorrectFlash(null), 500);

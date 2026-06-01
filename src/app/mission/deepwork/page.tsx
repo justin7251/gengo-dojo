@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
 import { getAgentProfile, updateAgentAfterMission } from '@/lib/agent';
+import { markDailyTask } from '@/lib/firestore';
 import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import { rollEncounter, Encounter } from '@/lib/encounter';
 import { isDue } from '@/lib/srs';
@@ -63,6 +64,7 @@ function DeepWorkMission() {
 
   async function handleRate(rating: Rating) {
     if (!current) return;
+    if (idx === 0) markDailyTask(uid, 'mission').catch(() => {});
     const prev = progress[current.id];
     if (prev) await rateWord(uid, current.id, rating, prev, targetLang, nativeLang);
     const isCorrect = rating !== 'wrong';

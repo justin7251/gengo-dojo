@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
 import { getAgentProfile, updateAgentAfterMission } from '@/lib/agent';
+import { markDailyTask } from '@/lib/firestore';
 import { Word, Progress, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import { isDue } from '@/lib/srs';
 import AuthGuard from '@/components/AuthGuard';
@@ -95,6 +96,7 @@ function ScrapMission() {
 
   async function handleAnswer(choice: string) {
     if (answered || phase !== 'playing') return;
+    if (idx === 0) markDailyTask(uid, 'mission').catch(() => {});
     setSelected(choice); setAnswered(true);
     const word = queue[idx];
     const isCorrect = choice === word.meaning;
