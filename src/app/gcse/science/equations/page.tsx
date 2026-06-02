@@ -185,7 +185,7 @@ function ScienceEquations() {
   }
 
   return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/gcse/science')} title="🔢 Equations" />
 
       {/* Mode toggle */}
@@ -195,7 +195,7 @@ function ScienceEquations() {
             flex: 1, padding: '8px', borderRadius: '10px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 500,
             border: `1px solid ${mode === m ? 'rgba(55,138,221,0.5)' : 'rgba(255,255,255,0.1)'}`,
-            background: mode === m ? 'rgba(55,138,221,0.12)' : 'rgba(255,255,255,0.04)',
+            background: mode === m ? 'rgba(55,138,221,0.12)' : 'var(--bg-secondary)',
             color: mode === m ? '#7bbfff' : 'rgba(255,255,255,0.45)', transition: 'all 0.15s',
           }}>
             {m === 'browse' ? '📋 Browse' : m === 'flashcard' ? '🎴 Flashcards' : '🧮 Calculator'}
@@ -209,7 +209,7 @@ function ScienceEquations() {
           <button key={f} onClick={() => setFilter(f)} style={{
             flex: 1, padding: '6px', borderRadius: '8px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '11px',
-            border: `1px solid ${filter === f ? subjectColor(f) + '55' : 'rgba(255,255,255,0.08)'}`,
+            border: `1px solid ${filter === f ? subjectColor(f) + '55' : 'var(--bg-secondary)'}`,
             background: filter === f ? subjectColor(f) + '15' : 'transparent',
             color: filter === f ? subjectColor(f) : 'rgba(255,255,255,0.4)', transition: 'all 0.15s',
           }}>
@@ -223,23 +223,23 @@ function ScienceEquations() {
         <>
           <input type="text" placeholder="Search equations…" value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', marginBottom: '1rem' }} />
+            style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)', borderRadius: '10px', color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', marginBottom: '1rem' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {filtered.map(eq => (
               <div key={eq.id} style={{
                 background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '14px',
-                border: `1px solid ${subjectColor(eq.subject)}25`,
+                border: `2px solid ${subjectColor(eq.subject)}55`,
                 borderLeft: `3px solid ${subjectColor(eq.subject)}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{eq.name}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)' }}>{eq.name}</span>
                   <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: subjectColor(eq.subject) + '15', color: subjectColor(eq.subject) + 'bb' }}>{eq.topic}</span>
                   {!eq.givenIn && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(226,75,74,0.12)', color: 'rgba(255,150,150,0.7)' }}>📝 memorise</span>}
                   {eq.givenIn  && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(0,232,122,0.1)', color: 'rgba(0,232,122,0.6)' }}>📄 given</span>}
                 </div>
-                <p style={{ fontSize: '16px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>{eq.formula}</p>
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginBottom: '3px' }}>{eq.symbols}</p>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Units: {eq.units}</p>
+                <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>{eq.formula}</p>
+                <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>{eq.symbols}</p>
+                <p style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>Units: {eq.units}</p>
               </div>
             ))}
           </div>
@@ -249,15 +249,15 @@ function ScienceEquations() {
       {/* ── Flashcard ── */}
       {mode === 'flashcard' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
             <span>{flashQueue.length} remaining · {known.size} known</span>
-            {known.size > 0 && <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>Reset</button>}
+            {known.size > 0 && <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-secondary)', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>Reset</button>}
           </div>
 
           {flashQueue.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
               <p style={{ fontSize: '48px', marginBottom: '1rem' }}>🏆</p>
-              <p style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>All equations known!</p>
+              <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--fg)', marginBottom: '8px' }}>All equations known!</p>
               <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={WHITE_BTN}>Start over</button>
             </div>
           ) : current ? (
@@ -269,17 +269,17 @@ function ScienceEquations() {
               }}>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: subjectColor(current.subject) + '15', color: subjectColor(current.subject) }}>{current.subject}</span>
-                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>{current.topic}</span>
+                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>{current.topic}</span>
                   {!current.givenIn && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'rgba(226,75,74,0.1)', color: 'rgba(255,150,150,0.6)' }}>memorise</span>}
                 </div>
-                <p style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '1.5rem' }}>{current.name}</p>
+                <p style={{ fontSize: '20px', fontWeight: 700, color: 'var(--fg)', marginBottom: '1.5rem' }}>{current.name}</p>
                 {!revealed ? (
                   <button onClick={() => setRevealed(true)} style={{ ...WHITE_BTN, fontSize: '13px' }}>Reveal formula</button>
                 ) : (
                   <div style={{ animation: 'fadeIn 0.2s ease', width: '100%' }}>
-                    <p style={{ fontSize: '24px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', marginBottom: '12px' }}>{current.formula}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', marginBottom: '4px' }}>{current.symbols}</p>
-                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Units: {current.units}</p>
+                    <p style={{ fontSize: '24px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)', marginBottom: '12px' }}>{current.formula}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', lineHeight: 1.6, paddingTop: '12px', borderTop: '1px solid var(--bg-secondary)', marginBottom: '4px' }}>{current.symbols}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>Units: {current.units}</p>
                   </div>
                 )}
               </div>
@@ -301,7 +301,7 @@ function ScienceEquations() {
       {/* ── Calculator ── */}
       {mode === 'calculator' && (
         <div>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
             Select an equation. Enter known values — leave one blank to solve for it.
           </p>
           {/* Equation picker */}
@@ -309,12 +309,12 @@ function ScienceEquations() {
             {filtered.map(eq => (
               <button key={eq.id} onClick={() => { setCalcEq(eq); setCalcInputs({}); setCalcResult(null); setCalcError(''); }} style={{
                 padding: '10px 14px', borderRadius: '10px', cursor: 'pointer',
-                border: `1px solid ${calcEq?.id === eq.id ? subjectColor(eq.subject) + '55' : 'rgba(255,255,255,0.08)'}`,
-                background: calcEq?.id === eq.id ? subjectColor(eq.subject) + '12' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${calcEq?.id === eq.id ? subjectColor(eq.subject) + '55' : 'var(--bg-secondary)'}`,
+                background: calcEq?.id === eq.id ? subjectColor(eq.subject) + '12' : 'var(--bg-secondary)',
                 fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%', transition: 'all 0.15s',
                 display: 'flex', alignItems: 'center', gap: '12px',
               }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', minWidth: '120px' }}>{eq.name}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)', minWidth: '120px' }}>{eq.name}</span>
                 <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)', color: subjectColor(eq.subject) }}>{eq.formula}</span>
               </button>
             ))}
@@ -322,8 +322,8 @@ function ScienceEquations() {
 
           {/* Input fields */}
           {calcEq && (
-            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', animation: 'fadeIn 0.2s ease' }}>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#fff', marginBottom: '4px' }}>{calcEq.name}</p>
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid var(--bg-secondary)', animation: 'fadeIn 0.2s ease' }}>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)', marginBottom: '4px' }}>{calcEq.name}</p>
               <p style={{ fontSize: '15px', fontFamily: 'var(--font-mono)', color: subjectColor(calcEq.subject), marginBottom: '14px' }}>{calcEq.formula}</p>
 
               {/* Parse symbol names from symbols field */}
@@ -331,7 +331,7 @@ function ScienceEquations() {
                 const varName = sym.trim().split('=')[0].trim();
                 return (
                   <div key={i} style={{ marginBottom: '8px' }}>
-                    <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px', letterSpacing: '0.04em' }}>
+                    <label style={{ fontSize: '11px', color: 'var(--fg-secondary)', display: 'block', marginBottom: '4px', letterSpacing: '0.04em' }}>
                       {sym.trim()}
                     </label>
                     <input
@@ -339,7 +339,7 @@ function ScienceEquations() {
                       placeholder="Leave blank to solve for this"
                       value={calcInputs[varName] ?? ''}
                       onChange={e => setCalcInputs(prev => ({ ...prev, [varName]: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '14px', outline: 'none' }}
+                      style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid #fff', borderRadius: '8px', color: 'var(--fg)', fontFamily: 'var(--font-mono)', fontSize: '14px', outline: 'none' }}
                     />
                   </div>
                 );
@@ -358,7 +358,7 @@ function ScienceEquations() {
               {calcResult && (
                 <div style={{ marginTop: '12px', padding: '12px 14px', background: 'rgba(55,138,221,0.12)', borderRadius: '10px', border: '1px solid rgba(55,138,221,0.3)', animation: 'fadeIn 0.2s ease' }}>
                   <p style={{ fontSize: '11px', letterSpacing: '0.08em', color: 'rgba(55,138,221,0.7)', marginBottom: '6px' }}>RESULT</p>
-                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#fff', fontFamily: 'var(--font-mono)' }}>{calcResult}</p>
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>{calcResult}</p>
                 </div>
               )}
             </div>
@@ -369,13 +369,13 @@ function ScienceEquations() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-    </Screen>
+    </Shell>
   );
 }
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#050a18', backgroundImage: 'radial-gradient(ellipse at top, #0a1535 0%, #050a18 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', backgroundImage: 'radial-gradient(ellipse at top, #0a1535 0%, #050a18 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(55,138,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </main>
@@ -384,11 +384,21 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#050a18', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}

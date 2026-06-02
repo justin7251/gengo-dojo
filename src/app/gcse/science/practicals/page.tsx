@@ -121,7 +121,7 @@ function SciencePracticals() {
   }
 
   return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => { if (mode === 'quiz' || selected) { setMode('browse'); setSelected(null); setQuizPrac(null); } else router.push('/gcse/science'); }}
         title={selected ? selected.title : quizPrac ? `Quiz: ${quizPrac.title}` : '🔬 Required Practicals'} />
 
@@ -132,7 +132,7 @@ function SciencePracticals() {
             <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: subjectColor(selected.subject) + '15', color: subjectColor(selected.subject) }}>{selected.subject}</span>
           </div>
 
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginBottom: '1.25rem', lineHeight: 1.6, fontStyle: 'italic' }}>
+          <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.25rem', lineHeight: 1.6, fontStyle: 'italic' }}>
             Aim: {selected.aim}
           </p>
 
@@ -141,39 +141,39 @@ function SciencePracticals() {
             {selected.method.map((step, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: subjectColor(selected.subject), minWidth: '20px', fontFamily: 'var(--font-mono)' }}>{i + 1}.</span>
-                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{step}</span>
+                <span style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5 }}>{step}</span>
               </div>
             ))}
           </Section>
 
           {/* Variables */}
           <Section title="Variables" color={subjectColor(selected.subject)}>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Independent (what you change):</p>
-            <p style={{ fontSize: '13px', color: '#fff', marginBottom: '10px' }}>{selected.variables.independent}</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Dependent (what you measure):</p>
-            <p style={{ fontSize: '13px', color: '#fff', marginBottom: '10px' }}>{selected.variables.dependent}</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Control variables (what you keep the same):</p>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '4px' }}>Independent (what you change):</p>
+            <p style={{ fontSize: '13px', color: 'var(--fg)', marginBottom: '10px' }}>{selected.variables.independent}</p>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '4px' }}>Dependent (what you measure):</p>
+            <p style={{ fontSize: '13px', color: 'var(--fg)', marginBottom: '10px' }}>{selected.variables.dependent}</p>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '4px' }}>Control variables (what you keep the same):</p>
             {selected.variables.control.map((c, i) => (
-              <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '3px' }}>• {c}</p>
+              <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>• {c}</p>
             ))}
           </Section>
 
           {/* Results */}
           <Section title="Results & Analysis" color={subjectColor(selected.subject)}>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{selected.results}</p>
+            <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>{selected.results}</p>
           </Section>
 
           {/* Evaluation */}
           <Section title="Evaluation" color={subjectColor(selected.subject)}>
             {selected.evaluation.map((e, i) => (
-              <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, marginBottom: '5px' }}>• {e}</p>
+              <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '5px' }}>• {e}</p>
             ))}
           </Section>
 
           {/* Exam tips */}
           <Section title="Exam Tips" color="#EF9F27">
             {selected.examTips.map((t, i) => (
-              <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, marginBottom: '5px' }}>⚡ {t}</p>
+              <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '5px' }}>⚡ {t}</p>
             ))}
           </Section>
 
@@ -193,7 +193,7 @@ function SciencePracticals() {
                 padding: '5px 10px', borderRadius: '8px', cursor: 'pointer',
                 fontFamily: 'var(--font-ui)', fontSize: '11px',
                 border: `1px solid ${quizSection === s ? subjectColor(quizPrac.subject) + '55' : 'rgba(255,255,255,0.1)'}`,
-                background: quizSection === s ? subjectColor(quizPrac.subject) + '15' : 'rgba(255,255,255,0.04)',
+                background: quizSection === s ? subjectColor(quizPrac.subject) + '15' : 'var(--bg-secondary)',
                 color: quizSection === s ? subjectColor(quizPrac.subject) : 'rgba(255,255,255,0.4)', transition: 'all 0.15s',
               }}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -201,8 +201,8 @@ function SciencePracticals() {
             ))}
           </div>
 
-          <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '16px', padding: '20px', minHeight: '200px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '16px', padding: '20px', minHeight: '200px', border: '1px solid var(--bg-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1rem' }}>
               {quizSection === 'method' && 'Can you recall all the steps?'}
               {quizSection === 'variables' && 'What are the independent, dependent and control variables?'}
               {quizSection === 'evaluation' && 'What are the key sources of error and improvements?'}
@@ -216,23 +216,23 @@ function SciencePracticals() {
             ) : (
               <div style={{ textAlign: 'left', width: '100%', animation: 'fadeIn 0.2s ease' }}>
                 {quizSection === 'method' && quizPrac.method.map((s, i) => (
-                  <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: '5px' }}><span style={{ color: subjectColor(quizPrac.subject), fontWeight: 700 }}>{i + 1}.</span> {s}</p>
+                  <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.6, marginBottom: '5px' }}><span style={{ color: subjectColor(quizPrac.subject), fontWeight: 700 }}>{i + 1}.</span> {s}</p>
                 ))}
                 {quizSection === 'variables' && (
                   <>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px' }}>Independent:</p>
-                    <p style={{ fontSize: '13px', color: '#fff', marginBottom: '8px' }}>{quizPrac.variables.independent}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px' }}>Dependent:</p>
-                    <p style={{ fontSize: '13px', color: '#fff', marginBottom: '8px' }}>{quizPrac.variables.dependent}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px' }}>Control:</p>
-                    {quizPrac.variables.control.map((c, i) => <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', marginBottom: '3px' }}>• {c}</p>)}
+                    <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>Independent:</p>
+                    <p style={{ fontSize: '13px', color: 'var(--fg)', marginBottom: '8px' }}>{quizPrac.variables.independent}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>Dependent:</p>
+                    <p style={{ fontSize: '13px', color: 'var(--fg)', marginBottom: '8px' }}>{quizPrac.variables.dependent}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>Control:</p>
+                    {quizPrac.variables.control.map((c, i) => <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '3px' }}>• {c}</p>)}
                   </>
                 )}
                 {quizSection === 'evaluation' && quizPrac.evaluation.map((e, i) => (
-                  <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, marginBottom: '5px' }}>• {e}</p>
+                  <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '5px' }}>• {e}</p>
                 ))}
                 {quizSection === 'tips' && quizPrac.examTips.map((t, i) => (
-                  <p key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, marginBottom: '5px' }}>⚡ {t}</p>
+                  <p key={i} style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '5px' }}>⚡ {t}</p>
                 ))}
               </div>
             )}
@@ -260,7 +260,7 @@ function SciencePracticals() {
                 padding: '5px 12px', borderRadius: '99px', cursor: 'pointer',
                 fontFamily: 'var(--font-ui)', fontSize: '12px',
                 border: `1px solid ${filter === f ? subjectColor(f) + '55' : 'rgba(255,255,255,0.1)'}`,
-                background: filter === f ? subjectColor(f) + '15' : 'rgba(255,255,255,0.04)',
+                background: filter === f ? subjectColor(f) + '15' : 'var(--bg-secondary)',
                 color: filter === f ? subjectColor(f) : 'rgba(255,255,255,0.4)', transition: 'all 0.15s',
               }}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -273,15 +273,15 @@ function SciencePracticals() {
               <div key={p.id} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${subjectColor(p.subject)}20`, borderLeft: `3px solid ${subjectColor(p.subject)}` }}>
                 <div style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{p.title}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)' }}>{p.title}</span>
                     <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: subjectColor(p.subject) + '15', color: subjectColor(p.subject) + 'bb' }}>{p.subject}</span>
                   </div>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, marginBottom: '10px' }}>{p.aim}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', lineHeight: 1.4, marginBottom: '10px' }}>{p.aim}</p>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button onClick={() => setSelected(p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${subjectColor(p.subject)}30`, background: subjectColor(p.subject) + '10', color: subjectColor(p.subject), fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                       📋 Study
                     </button>
-                    <button onClick={() => startQuiz(p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                    <button onClick={() => startQuiz(p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: '2px solid var(--border-dark)', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                       🎯 Quiz
                     </button>
                   </div>
@@ -295,17 +295,17 @@ function SciencePracticals() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-    </Screen>
+    </Shell>
   );
 }
 
 function Section({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div style={{ marginBottom: '12px', background: 'rgba(0,0,0,0.25)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
+    <div style={{ marginBottom: '12px', background: 'rgba(0,0,0,0.25)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--bg-secondary)' }}>
       <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
         <span style={{ fontSize: '12px', fontWeight: 600, color, letterSpacing: '0.06em' }}>{title.toUpperCase()}</span>
-        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+        <span style={{ fontSize: '12px', color: 'var(--fg-secondary)', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
       </button>
       {open && <div style={{ padding: '0 14px 12px', animation: 'fadeIn 0.15s ease' }}>{children}</div>}
     </div>
@@ -323,11 +323,27 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff', textAlign: 'center', flex: 1, padding: '0 8px' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)', textAlign: 'center', flex: 1, padding: '0 8px' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#060d0a', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+const GHOST_BTN: React.CSSProperties = {
+  background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '10px',
+  padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 3px 0 var(--border-dark)',
+};

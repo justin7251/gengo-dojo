@@ -95,7 +95,7 @@ function GCSEVocab() {
             flex: 1, padding: '8px', borderRadius: '10px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500,
             border: `1px solid ${mode === m ? 'rgba(0,232,122,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            background: mode === m ? 'rgba(0,232,122,0.1)' : 'rgba(255,255,255,0.04)',
+            background: mode === m ? 'rgba(0,232,122,0.1)' : 'var(--bg-secondary)',
             color: mode === m ? '#00e87a' : 'rgba(255,255,255,0.45)', transition: 'all 0.15s',
           }}>
             {m === 'browse' ? '📋 Browse' : '🎴 Flashcards'}
@@ -120,7 +120,7 @@ function GCSEVocab() {
 
       {mode === 'browse' && (
         <input type="text" placeholder="Search words…" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', marginBottom: '1rem' }} />
+          style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)', borderRadius: '10px', color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none', marginBottom: '1rem' }} />
       )}
 
       {/* Browse mode */}
@@ -129,14 +129,14 @@ function GCSEVocab() {
           {filtered.map(w => (
             <div key={w.word} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '14px', border: `1px solid ${w.tier === 3 ? 'rgba(127,119,221,0.2)' : 'rgba(0,232,122,0.15)'}`, borderLeft: `3px solid ${w.tier === 3 ? '#7F77DD' : '#00e87a'}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>{w.word}</span>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--fg)' }}>{w.word}</span>
                 <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: w.tier === 3 ? 'rgba(127,119,221,0.15)' : 'rgba(0,232,122,0.1)', color: w.tier === 3 ? '#9F99E8' : '#00e87a', border: `1px solid ${w.tier === 3 ? 'rgba(127,119,221,0.25)' : 'rgba(0,232,122,0.2)'}` }}>
                   Tier {w.tier}
                 </span>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)' }}>{w.subject}</span>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>{w.subject}</span>
               </div>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '6px', lineHeight: 1.4 }}>{w.definition}</p>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 1.5 }}>"{w.example}"</p>
+              <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '6px', lineHeight: 1.4 }}>{w.definition}</p>
+              <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', fontStyle: 'italic', lineHeight: 1.5 }}>"{w.example}"</p>
             </div>
           ))}
         </div>
@@ -145,16 +145,16 @@ function GCSEVocab() {
       {/* Flashcard mode */}
       {mode === 'flashcard' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
             <span>{flashQueue.length} remaining · {known.size} known</span>
-            {known.size > 0 && <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>Reset</button>}
+            {known.size > 0 && <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-secondary)', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>Reset</button>}
           </div>
 
           {flashQueue.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
               <p style={{ fontSize: '48px', marginBottom: '1rem' }}>🏆</p>
-              <p style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>All words known!</p>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '2rem' }}>You've marked all {VOCAB_BANK.length} words as known.</p>
+              <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--fg)', marginBottom: '8px' }}>All words known!</p>
+              <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '2rem' }}>You've marked all {VOCAB_BANK.length} words as known.</p>
               <button onClick={() => { setKnown(new Set()); setCardIdx(0); }} style={WHITE_BTN}>Start over</button>
             </div>
           ) : current ? (
@@ -165,11 +165,11 @@ function GCSEVocab() {
                   <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: current.tier === 3 ? 'rgba(127,119,221,0.15)' : 'rgba(0,232,122,0.1)', color: current.tier === 3 ? '#9F99E8' : '#00e87a' }}>
                     Tier {current.tier}
                   </span>
-                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>
+                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>
                     {current.subject}
                   </span>
                 </div>
-                <p style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
+                <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--fg)', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
                   {current.word}
                 </p>
                 {!revealed ? (
@@ -178,8 +178,8 @@ function GCSEVocab() {
                   </button>
                 ) : (
                   <div style={{ animation: 'fadeIn 0.2s ease', width: '100%' }}>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '1rem' }}>{current.definition}</p>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', lineHeight: 1.5, paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <p style={{ fontSize: '15px', color: 'var(--fg-secondary)', lineHeight: 1.6, marginBottom: '1rem' }}>{current.definition}</p>
+                    <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', fontStyle: 'italic', lineHeight: 1.5, paddingTop: '12px', borderTop: '1px solid var(--bg-secondary)' }}>
                       "{current.example}"
                     </p>
                   </div>
@@ -219,11 +219,11 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#040e08', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const GHOST_BTN: React.CSSProperties = { background: 'var(--bg-secondary)', border: '1px solid #fff', borderRadius: '8px', padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };

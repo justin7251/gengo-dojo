@@ -61,37 +61,37 @@ function EnglishLearn() {
   }
 
   if (phase === 'loading') return (
-    <Screen>
+    <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <Spinner />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>Building your lesson…</p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{activeTopic}</p>
+        <p style={{ fontSize: '16px', color: 'var(--fg)', marginTop: '1.5rem', marginBottom: '6px' }}>Building your lesson…</p>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)' }}>{activeTopic}</p>
       </div>
-    </Screen>
+    </Shell>
   );
 
   if (phase === 'lesson' && lesson) return (
-    <Screen>
+    <Shell>
       <LessonCardSwiper
         lesson={lesson}
         accentColor={ACCENT}
         practiseRoute="/gcse/english/reading"
         onBack={() => { setPhase('pick'); setLesson(null); }}
       />
-    </Screen>
+    </Shell>
   );
 
   return (
-    <Screen>
+    <Shell>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/gcse/english')} style={GHOST_BTN}>← Back</button>
+        <button onClick={() => router.push('/gcse/english')} className="btn">← Back</button>
         <div>
-          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)' }}>ENGLISH · LEARN</p>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', lineHeight: 1 }}>Choose a topic</h1>
+          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--fg-secondary)' }}>ENGLISH · LEARN</p>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>Choose a topic</h1>
         </div>
       </div>
 
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+      <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
         Each lesson teaches one skill through 7 swipeable cards — definition, annotated example, framework, weak vs strong responses, memory trick, practice, and summary.
       </p>
 
@@ -117,7 +117,7 @@ function EnglishLearn() {
                   fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
                   transition: 'all 0.15s',
                 }}>
-                  <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{topic}</span>
+                  <span style={{ fontSize: '14px', color: 'var(--fg-secondary)' }}>{topic}</span>
                   <span style={{ fontSize: '18px', color: `${ACCENT}80` }}>›</span>
                 </button>
               ))}
@@ -125,7 +125,7 @@ function EnglishLearn() {
           </div>
         ))}
       </div>
-    </Screen>
+    </Shell>
   );
 }
 
@@ -138,4 +138,14 @@ function Screen({ children }: { children: React.ReactNode }) {
   );
 }
 
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}

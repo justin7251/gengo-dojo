@@ -87,9 +87,9 @@ function GCSEWriting() {
 
   // ── Setup ──────────────────────────────────────────
   if (phase === 'setup') return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/gcse')} title="✍️ Writing" />
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+      <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
         Choose a writing task. AI marks your response using the AQA AO5 and AO6 mark scheme.
         Aim for 450–600 words in 45 minutes.
       </p>
@@ -100,7 +100,7 @@ function GCSEWriting() {
             flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500,
             border: `1px solid ${writingType === t ? 'rgba(212,83,126,0.5)' : 'rgba(255,255,255,0.1)'}`,
-            background: writingType === t ? 'rgba(212,83,126,0.12)' : 'rgba(255,255,255,0.04)',
+            background: writingType === t ? 'rgba(212,83,126,0.12)' : 'var(--bg-secondary)',
             color: writingType === t ? '#D4537E' : 'rgba(255,255,255,0.5)',
             transition: 'all 0.15s',
           }}>
@@ -113,27 +113,27 @@ function GCSEWriting() {
         {filteredPrompts.map((p, i) => (
           <button key={i} onClick={() => startWriting(p)} style={{
             padding: '16px', borderRadius: '14px', cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+            border: '2px solid var(--border-dark)', background: 'var(--bg-secondary)',
             fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
             transition: 'all 0.15s',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{p.title}</span>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)' }}>{p.title}</span>
               <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(212,83,126,0.15)', color: 'rgba(212,83,126,0.8)', border: '1px solid rgba(212,83,126,0.2)' }}>{p.form}</span>
-              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>{p.timing}</span>
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>{p.timing}</span>
             </div>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{p.instruction.slice(0, 100)}…</p>
+            <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5 }}>{p.instruction.slice(0, 100)}…</p>
           </button>
         ))}
       </div>
-    </Screen>
+    </Shell>
   );
 
   // ── Writing ────────────────────────────────────────
   if (phase === 'writing' && selectedPrompt) return (
-    <Screen>
+    <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setPhase('setup'); }} style={GHOST_BTN}>← Back</button>
+        <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setPhase('setup'); }} className="btn">← Back</button>
         {/* Timer */}
         <div style={{
           padding: '6px 14px', borderRadius: '99px', fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 700,
@@ -144,23 +144,23 @@ function GCSEWriting() {
         }}>
           {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
         </div>
-        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-mono)' }}>{wordCount} words</span>
+        <span style={{ fontSize: '12px', color: 'var(--fg-secondary)', fontFamily: 'var(--font-mono)' }}>{wordCount} words</span>
       </div>
 
       {/* Prompt */}
       <div style={{ background: 'rgba(212,83,126,0.08)', borderRadius: '14px', padding: '14px 16px', marginBottom: '1rem', border: '1px solid rgba(212,83,126,0.2)' }}>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#D4537E' }}>{selectedPrompt.form}</span>
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>·</span>
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>40 marks · AO5 + AO6</span>
+          <span style={{ fontSize: '12px', color: 'var(--fg-secondary)' }}>·</span>
+          <span style={{ fontSize: '12px', color: 'var(--fg-secondary)' }}>40 marks · AO5 + AO6</span>
         </div>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{selectedPrompt.instruction}</p>
+        <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>{selectedPrompt.instruction}</p>
       </div>
 
       {/* Writing tips */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {['Use paragraphs', 'Vary sentence length', 'Precise vocabulary', 'Structural features', 'Accurate punctuation'].map(tip => (
-          <span key={tip} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <span key={tip} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)', border: '1px solid var(--bg-secondary)' }}>
             {tip}
           </span>
         ))}
@@ -174,8 +174,8 @@ function GCSEWriting() {
         placeholder="Begin writing here…"
         style={{
           width: '100%', flex: 1, minHeight: '320px',
-          background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '14px', color: '#fff', fontFamily: 'var(--font-ui)',
+          background: 'rgba(0,0,0,0.3)', border: '2px solid var(--border-dark)',
+          borderRadius: '14px', color: 'var(--fg)', fontFamily: 'var(--font-ui)',
           fontSize: '14px', padding: '14px', outline: 'none',
           resize: 'none', lineHeight: 1.75, marginBottom: '1rem',
         }}
@@ -186,44 +186,44 @@ function GCSEWriting() {
       <button onClick={submitForMarking} disabled={wordCount < 50} style={{ ...WHITE_BTN, width: '100%', padding: '14px', fontSize: '15px', opacity: wordCount < 50 ? 0.4 : 1 }}>
         Submit for marking ({wordCount < 50 ? `${50 - wordCount} more words needed` : `${wordCount} words`})
       </button>
-    </Screen>
+    </Shell>
   );
 
   // ── Marking ────────────────────────────────────────
   if (phase === 'marking') return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/gcse')} title="✍️ Writing" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <Spinner />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>Marking your writing…</p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Assessing AO5 and AO6 against AQA mark scheme</p>
+        <p style={{ fontSize: '16px', color: 'var(--fg)', marginTop: '1.5rem', marginBottom: '6px' }}>Marking your writing…</p>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)' }}>Assessing AO5 and AO6 against AQA mark scheme</p>
       </div>
-    </Screen>
+    </Shell>
   );
 
   // ── Feedback ────────────────────────────────────────
   if (phase === 'feedback' && feedback && selectedPrompt) return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => setPhase('setup')} title="✍️ Feedback" />
       <div style={{ flex: 1 }}>
 
         {/* Score */}
         <div style={{ background: 'rgba(212,83,126,0.1)', borderRadius: '16px', padding: '20px', marginBottom: '1.5rem', border: '1px solid rgba(212,83,126,0.25)', textAlign: 'center' }}>
-          <p style={{ fontSize: '42px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+          <p style={{ fontSize: '42px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
             {feedback.total}/40
           </p>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', marginTop: '6px' }}>
             {feedback.levelDescriptor}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '16px' }}>
             <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '12px' }}>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>{feedback.ao5Marks}/24</p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>AO5 · Communication</p>
+              <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>{feedback.ao5Marks}/24</p>
+              <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', marginTop: '2px' }}>AO5 · Communication</p>
               <p style={{ fontSize: '11px', color: '#D4537E', marginTop: '2px' }}>{feedback.ao5Grade}</p>
             </div>
             <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '12px' }}>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>{feedback.ao6Marks}/16</p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>AO6 · Technical</p>
+              <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>{feedback.ao6Marks}/16</p>
+              <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', marginTop: '2px' }}>AO6 · Technical</p>
               <p style={{ fontSize: '11px', color: '#D4537E', marginTop: '2px' }}>{feedback.ao6Grade}</p>
             </div>
           </div>
@@ -235,7 +235,7 @@ function GCSEWriting() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {feedback.strengths.map((s, i) => (
               <div key={i} style={{ padding: '10px 14px', background: 'rgba(0,232,122,0.07)', borderRadius: '10px', border: '1px solid rgba(0,232,122,0.15)' }}>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{s}</p>
+                <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5 }}>{s}</p>
               </div>
             ))}
           </div>
@@ -247,7 +247,7 @@ function GCSEWriting() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {feedback.targets.map((t, i) => (
               <div key={i} style={{ padding: '10px 14px', background: 'rgba(239,159,39,0.07)', borderRadius: '10px', border: '1px solid rgba(239,159,39,0.15)' }}>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{t}</p>
+                <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5 }}>{t}</p>
               </div>
             ))}
           </div>
@@ -256,7 +256,7 @@ function GCSEWriting() {
         {/* Model sentence */}
         <div style={{ padding: '14px 16px', background: 'rgba(127,119,221,0.08)', borderRadius: '12px', border: '1px solid rgba(127,119,221,0.2)', marginBottom: '1.5rem' }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(127,119,221,0.7)', marginBottom: '8px' }}>→ MODEL SENTENCE</p>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, fontStyle: 'italic' }}>"{feedback.modelSentence}"</p>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.7, fontStyle: 'italic' }}>"{feedback.modelSentence}"</p>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -265,7 +265,7 @@ function GCSEWriting() {
         </div>
       </div>
 
-      </Screen>
+      </Shell>
   );
 
   return null;
@@ -282,11 +282,27 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#100510', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+const GHOST_BTN: React.CSSProperties = {
+  background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '10px',
+  padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 3px 0 var(--border-dark)',
+};

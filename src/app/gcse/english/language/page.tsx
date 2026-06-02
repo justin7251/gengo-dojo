@@ -112,10 +112,10 @@ function GCSELanguage() {
 
   // ── Setup ──────────────────────────────────────────
   if (phase === 'setup' || phase === 'generating') return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/gcse')} title="🔍 Language Analysis" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
           AI generates an extract with hidden language techniques. Identify them, then write PETER analysis paragraphs.
         </p>
 
@@ -132,8 +132,8 @@ function GCSELanguage() {
             <div key={p.letter + p.label} style={{ display: 'flex', gap: '10px', marginBottom: '6px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: '#7F77DD', width: '18px', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>{p.letter}</span>
               <div>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{p.label}</span>
-                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginLeft: '6px' }}>— {p.desc}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--fg-secondary)' }}>{p.label}</span>
+                <span style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginLeft: '6px' }}>— {p.desc}</span>
               </div>
             </div>
           ))}
@@ -149,25 +149,25 @@ function GCSELanguage() {
           {generating ? 'Generating extract…' : 'Generate extract →'}
         </button>
       </div>
-    </Screen>
+    </Shell>
   );
 
   // ── Analysing ──────────────────────────────────────
   if (phase === 'analysing' && session) return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => setPhase('setup')} title="🔍 Language Analysis" />
       <div style={{ flex: 1, overflowY: 'auto' }}>
 
         {/* Extract */}
-        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', marginBottom: '1.25rem', border: '1px solid var(--bg-secondary)' }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(127,119,221,0.6)', marginBottom: '8px' }}>EXTRACT — {session.focus}</p>
-          <p style={{ fontSize: '14px', lineHeight: 1.85, color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap' }}>{session.extract}</p>
+          <p style={{ fontSize: '14px', lineHeight: 1.85, color: 'var(--fg-secondary)', whiteSpace: 'pre-wrap' }}>{session.extract}</p>
         </div>
 
         {/* AQA Question */}
         <div style={{ background: 'rgba(127,119,221,0.08)', borderRadius: '12px', padding: '12px 16px', marginBottom: '1.25rem', border: '1px solid rgba(127,119,221,0.2)' }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(127,119,221,0.6)', marginBottom: '4px' }}>AQA QUESTION · 8 MARKS</p>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>{session.question}</p>
+          <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5 }}>{session.question}</p>
         </div>
 
         {/* Tabs */}
@@ -177,7 +177,7 @@ function GCSELanguage() {
               flex: 1, padding: '9px', borderRadius: '10px', cursor: 'pointer',
               fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500,
               border: `1px solid ${activeTab === tab ? 'rgba(127,119,221,0.5)' : 'rgba(255,255,255,0.1)'}`,
-              background: activeTab === tab ? 'rgba(127,119,221,0.15)' : 'rgba(255,255,255,0.04)',
+              background: activeTab === tab ? 'rgba(127,119,221,0.15)' : 'var(--bg-secondary)',
               color: activeTab === tab ? '#9F99E8' : 'rgba(255,255,255,0.45)',
               transition: 'all 0.15s',
             }}>
@@ -189,7 +189,7 @@ function GCSELanguage() {
         {/* Tab: Identify */}
         {activeTab === 'identify' && (
           <div style={{ animation: 'fadeIn 0.15s ease' }}>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
               Read the extract. Tap every technique you can spot. Don't worry about getting all of them — focus on what you can support with a quote.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '1.5rem' }}>
@@ -200,8 +200,8 @@ function GCSELanguage() {
                     style={{
                       padding: '6px 12px', borderRadius: '99px', cursor: 'pointer',
                       fontFamily: 'var(--font-ui)', fontSize: '12px', transition: 'all 0.15s',
-                      border: `1px solid ${active ? 'rgba(127,119,221,0.6)' : 'rgba(255,255,255,0.12)'}`,
-                      background: active ? 'rgba(127,119,221,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${active ? 'rgba(127,119,221,0.6)' : '#fff'}`,
+                      background: active ? 'rgba(127,119,221,0.2)' : 'var(--bg-secondary)',
                       color: active ? '#9F99E8' : 'rgba(255,255,255,0.5)',
                       fontWeight: active ? 600 : 400,
                     }}>
@@ -213,7 +213,7 @@ function GCSELanguage() {
             {identified.length > 0 && (
               <div style={{ padding: '10px 14px', background: 'rgba(127,119,221,0.08)', borderRadius: '10px', border: '1px solid rgba(127,119,221,0.15)', marginBottom: '1rem' }}>
                 <p style={{ fontSize: '12px', color: 'rgba(127,119,221,0.7)', marginBottom: '4px' }}>You spotted: {identified.length} technique{identified.length !== 1 ? 's' : ''}</p>
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{identified.join(' · ')}</p>
+                <p style={{ fontSize: '12px', color: 'var(--fg-secondary)' }}>{identified.join(' · ')}</p>
               </div>
             )}
             <button onClick={() => setActiveTab('peter')} style={{ ...WHITE_BTN, width: '100%' }}>
@@ -225,11 +225,11 @@ function GCSELanguage() {
         {/* Tab: PETER */}
         {activeTab === 'peter' && (
           <div style={{ animation: 'fadeIn 0.15s ease' }}>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
               Write 2 PETER analysis paragraphs using techniques you identified. Each paragraph = 1 technique.
             </p>
             {peters.map((p, i) => (
-              <div key={i} style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '14px', padding: '14px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div key={i} style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '14px', padding: '14px', marginBottom: '12px', border: '1px solid var(--bg-secondary)' }}>
                 <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(127,119,221,0.7)', marginBottom: '12px', letterSpacing: '0.06em' }}>
                   PARAGRAPH {i + 1}
                 </p>
@@ -241,7 +241,7 @@ function GCSELanguage() {
                   { key: 'reader',   label: 'R — Reader',   ph: 'This makes the reader feel / think...' },
                 ] as { key: keyof PETERResponse; label: string; ph: string }[]).map(field => (
                   <div key={field.key} style={{ marginBottom: '8px' }}>
-                    <label style={{ fontSize: '10px', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: '4px' }}>
+                    <label style={{ fontSize: '10px', letterSpacing: '0.06em', color: 'var(--fg-secondary)', display: 'block', marginBottom: '4px' }}>
                       {field.label}
                     </label>
                     <textarea
@@ -249,7 +249,7 @@ function GCSELanguage() {
                       onChange={e => updatePeter(i, field.key, e.target.value)}
                       placeholder={field.ph}
                       rows={2}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '8px 10px', outline: 'none', resize: 'none', lineHeight: 1.5 }}
+                      style={{ width: '100%', background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)', borderRadius: '8px', color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '8px 10px', outline: 'none', resize: 'none', lineHeight: 1.5 }}
                     />
                   </div>
                 ))}
@@ -272,12 +272,12 @@ function GCSELanguage() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-    </Screen>
+    </Shell>
   );
 
   // ── Feedback ───────────────────────────────────────
   if (phase === 'feedback') return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => setPhase('setup')} title="🔍 Feedback" />
       <div style={{ flex: 1 }}>
         {marks && (
@@ -286,18 +286,18 @@ function GCSELanguage() {
             borderRadius: '16px', padding: '20px', textAlign: 'center', marginBottom: '1.5rem',
             border: `1px solid ${marks.earned / marks.max >= 0.75 ? 'rgba(0,232,122,0.3)' : marks.earned / marks.max >= 0.5 ? 'rgba(239,159,39,0.3)' : 'rgba(226,75,74,0.3)'}`,
           }}>
-            <p style={{ fontSize: '40px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+            <p style={{ fontSize: '40px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
               {marks.earned}/{marks.max}
             </p>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginTop: '6px' }}>
               AO2 · Language Analysis
             </p>
           </div>
         )}
 
-        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '1.5rem' }}>
+        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid var(--bg-secondary)', marginBottom: '1.5rem' }}>
           <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(127,119,221,0.6)', marginBottom: '10px' }}>EXAMINER FEEDBACK</p>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{feedback}</p>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{feedback}</p>
         </div>
 
         {/* Techniques that were actually present */}
@@ -306,13 +306,13 @@ function GCSELanguage() {
             <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(127,119,221,0.6)', marginBottom: '10px' }}>TECHNIQUES IN THE EXTRACT</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {session.techniques.map((t, i) => (
-                <div key={i} style={{ borderBottom: i < session.techniques.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingBottom: i < session.techniques.length - 1 ? '8px' : '0' }}>
+                <div key={i} style={{ borderBottom: i < session.techniques.length - 1 ? '1px solid var(--bg-secondary)' : 'none', paddingBottom: i < session.techniques.length - 1 ? '8px' : '0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#9F99E8' }}>{t.name}</span>
                     {identified.includes(t.name) && <span style={{ fontSize: '10px', color: '#00e87a' }}>✓ you spotted this</span>}
                   </div>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginBottom: '2px' }}>"{t.quote}"</p>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{t.effect}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', fontStyle: 'italic', marginBottom: '2px' }}>"{t.quote}"</p>
+                  <p style={{ fontSize: '12px', color: 'var(--fg-secondary)' }}>{t.effect}</p>
                 </div>
               ))}
             </div>
@@ -324,7 +324,7 @@ function GCSELanguage() {
           <button onClick={() => router.push('/gcse')} style={{ ...GHOST_BTN, flex: 1 }}>Hub</button>
         </div>
       </div>
-    </Screen>
+    </Shell>
   );
 
   return null;
@@ -341,11 +341,27 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#080614', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+const GHOST_BTN: React.CSSProperties = {
+  background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '10px',
+  padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 3px 0 var(--border-dark)',
+};

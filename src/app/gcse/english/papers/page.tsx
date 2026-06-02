@@ -98,7 +98,7 @@ function GCSEPapers() {
   if (phase === 'setup') return (
     <Screen>
       <TopBar onBack={() => router.push('/gcse')} title="📝 Mock Paper" />
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+      <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
         A full AQA-style mock paper with AI-generated extract and all questions.
         1 hour 45 minutes. 80 marks. AI marks every answer against the mark scheme.
       </p>
@@ -109,17 +109,17 @@ function GCSEPapers() {
             flex: 1, padding: '16px', borderRadius: '14px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', textAlign: 'left', transition: 'all 0.15s',
             border: `1px solid ${paper === p ? 'rgba(239,159,39,0.5)' : 'rgba(255,255,255,0.1)'}`,
-            background: paper === p ? 'rgba(239,159,39,0.1)' : 'rgba(255,255,255,0.03)',
+            background: paper === p ? 'rgba(239,159,39,0.1)' : 'var(--bg-secondary)',
           }}>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: '#fff', marginBottom: '4px' }}>{p === 'P1' ? 'Paper 1' : 'Paper 2'}</p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{p === 'P1' ? 'Fiction · Creative writing\n1h 45m · 80 marks' : 'Non-fiction · Transactional\n1h 45m · 80 marks'}</p>
+            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--fg)', marginBottom: '4px' }}>{p === 'P1' ? 'Paper 1' : 'Paper 2'}</p>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', lineHeight: 1.4 }}>{p === 'P1' ? 'Fiction · Creative writing\n1h 45m · 80 marks' : 'Non-fiction · Transactional\n1h 45m · 80 marks'}</p>
           </button>
         ))}
       </div>
 
       <div style={{ padding: '14px', background: 'rgba(239,159,39,0.07)', borderRadius: '12px', border: '1px solid rgba(239,159,39,0.2)', marginBottom: '2rem' }}>
         <p style={{ fontSize: '12px', color: 'rgba(239,159,39,0.8)', marginBottom: '6px', fontWeight: 500 }}>Exam conditions</p>
-        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--fg-secondary)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
           <p>⏱ 1 hour 45 minutes · timer visible throughout</p>
           <p>📄 Section A: Reading (40 marks) · Q1–Q4</p>
           <p>✍️ Section B: Writing (40 marks) · Q5</p>
@@ -141,8 +141,8 @@ function GCSEPapers() {
       <TopBar onBack={() => setPhase('setup')} title="📝 Mock Paper" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <Spinner />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>Generating your paper…</p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Writing extract, questions, and mark scheme</p>
+        <p style={{ fontSize: '16px', color: 'var(--fg)', marginTop: '1.5rem', marginBottom: '6px' }}>Generating your paper…</p>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)' }}>Writing extract, questions, and mark scheme</p>
       </div>
     </Screen>
   );
@@ -153,8 +153,8 @@ function GCSEPapers() {
       <TopBar onBack={() => setPhase('setup')} title="📝 Mock Paper" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <Spinner />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>Marking your paper…</p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>This may take a moment — marking all questions</p>
+        <p style={{ fontSize: '16px', color: 'var(--fg)', marginTop: '1.5rem', marginBottom: '6px' }}>Marking your paper…</p>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)' }}>This may take a moment — marking all questions</p>
       </div>
     </Screen>
   );
@@ -165,7 +165,7 @@ function GCSEPapers() {
       {/* Sticky timer bar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#04090e', paddingBottom: '10px', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setPhase('setup'); }} style={GHOST_BTN}>← Exit</button>
+          <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setPhase('setup'); }} className="btn">← Exit</button>
           <div style={{
             padding: '6px 16px', borderRadius: '99px',
             fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 700,
@@ -174,11 +174,11 @@ function GCSEPapers() {
           }}>
             {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
           </div>
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--fg-secondary)', fontFamily: 'var(--font-mono)' }}>
             {Object.keys(answers).length}/{mock.questions.length} answered
           </span>
         </div>
-        <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px' }}>
+        <div style={{ height: '3px', background: 'var(--bg-secondary)', borderRadius: '2px' }}>
           <div style={{ height: '3px', background: '#EF9F27', borderRadius: '2px', width: `${pct}%`, transition: 'width 1s linear', boxShadow: '0 0 6px rgba(239,159,39,0.5)' }} />
         </div>
       </div>
@@ -189,23 +189,23 @@ function GCSEPapers() {
           <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(239,159,39,0.7)', marginBottom: '4px' }}>
             AQA GCSE ENGLISH LANGUAGE · {mock.paper === 'P1' ? 'PAPER 1' : 'PAPER 2'}
           </p>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>{mock.title}</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>{mock.title}</h2>
         </div>
 
         {/* Section A */}
         <div style={{ padding: '10px 14px', background: 'rgba(55,138,221,0.08)', borderRadius: '10px', border: '1px solid rgba(55,138,221,0.2)', marginBottom: '1rem' }}>
           <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(55,138,221,0.8)' }}>SECTION A — READING · 40 marks</p>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>Read the extract then answer Q1–Q4</p>
+          <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', marginTop: '2px' }}>Read the extract then answer Q1–Q4</p>
         </div>
 
         {/* Extract */}
-        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', marginBottom: '1.25rem', border: '1px solid var(--bg-secondary)' }}>
           <button onClick={() => setShowExtract(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', marginBottom: showExtract ? '12px' : '0' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>📄 Extract</span>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', transform: showExtract ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)' }}>📄 Extract</span>
+            <span style={{ fontSize: '13px', color: 'var(--fg-secondary)', transform: showExtract ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
           </button>
           {showExtract && (
-            <p style={{ fontSize: '14px', lineHeight: 1.85, color: 'rgba(255,255,255,0.82)', whiteSpace: 'pre-wrap', animation: 'fadeIn 0.2s ease' }}>
+            <p style={{ fontSize: '14px', lineHeight: 1.85, color: 'var(--fg-secondary)', whiteSpace: 'pre-wrap', animation: 'fadeIn 0.2s ease' }}>
               {mock.extract}
             </p>
           )}
@@ -214,18 +214,18 @@ function GCSEPapers() {
         {/* Reading questions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
           {readingQs.map(q => (
-            <div key={q.number} style={{ background: 'rgba(0,0,0,0.28)', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div key={q.number} style={{ background: 'rgba(0,0,0,0.28)', borderRadius: '14px', padding: '16px', border: '1px solid var(--bg-secondary)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
                 <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(55,138,221,0.15)', color: 'rgba(55,138,221,0.8)' }}>{q.ao}</span>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>{q.marks} marks</span>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>{q.marks} marks</span>
               </div>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, marginBottom: '6px' }}>{q.question}</p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', marginBottom: '10px' }}>💡 {q.hint}</p>
+              <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '6px' }}>{q.question}</p>
+              <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', fontStyle: 'italic', marginBottom: '10px' }}>💡 {q.hint}</p>
               <textarea value={answers[q.number] ?? ''} onChange={e => setAnswers(p => ({ ...p, [q.number]: e.target.value }))}
                 placeholder="Write your answer here…" rows={q.marks >= 20 ? 10 : q.marks >= 8 ? 6 : 3}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '10px 12px', outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '4px', textAlign: 'right' }}>{(answers[q.number] ?? '').split(/\s+/).filter(Boolean).length} words</p>
+                style={{ width: '100%', background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)', borderRadius: '10px', color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '10px 12px', outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
+              <p style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>{(answers[q.number] ?? '').split(/\s+/).filter(Boolean).length} words</p>
             </div>
           ))}
         </div>
@@ -233,22 +233,22 @@ function GCSEPapers() {
         {/* Section B */}
         <div style={{ padding: '10px 14px', background: 'rgba(212,83,126,0.08)', borderRadius: '10px', border: '1px solid rgba(212,83,126,0.2)', marginBottom: '1rem' }}>
           <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(212,83,126,0.8)' }}>SECTION B — WRITING · 40 marks</p>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>AO5 (24) + AO6 (16) · Aim 450–600 words</p>
+          <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', marginTop: '2px' }}>AO5 (24) + AO6 (16) · Aim 450–600 words</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '2rem' }}>
           {writingQs.map(q => (
             <div key={q.number} style={{ background: 'rgba(0,0,0,0.28)', borderRadius: '14px', padding: '16px', border: '1px solid rgba(212,83,126,0.15)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
                 <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(212,83,126,0.15)', color: 'rgba(212,83,126,0.8)' }}>{q.ao}</span>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>{q.marks} marks</span>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>{q.marks} marks</span>
               </div>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, marginBottom: '10px' }}>{q.question}</p>
+              <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.5, marginBottom: '10px' }}>{q.question}</p>
               <textarea value={answers[q.number] ?? ''} onChange={e => setAnswers(p => ({ ...p, [q.number]: e.target.value }))}
                 placeholder="Write your response here…" rows={14}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '10px 12px', outline: 'none', resize: 'none', lineHeight: 1.75 }} />
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '4px', textAlign: 'right' }}>{(answers[q.number] ?? '').split(/\s+/).filter(Boolean).length} words</p>
+                style={{ width: '100%', background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)', borderRadius: '10px', color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px', padding: '10px 12px', outline: 'none', resize: 'none', lineHeight: 1.75 }} />
+              <p style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>{(answers[q.number] ?? '').split(/\s+/).filter(Boolean).length} words</p>
             </div>
           ))}
         </div>
@@ -277,9 +277,9 @@ function GCSEPapers() {
         <div style={{ flex: 1 }}>
           {/* Banner */}
           <div style={{ background: pctScore >= 70 ? 'rgba(0,232,122,0.1)' : pctScore >= 50 ? 'rgba(239,159,39,0.1)' : 'rgba(226,75,74,0.1)', borderRadius: '18px', padding: '24px', textAlign: 'center', marginBottom: '1.5rem', border: `1px solid ${pctScore >= 70 ? 'rgba(0,232,122,0.25)' : pctScore >= 50 ? 'rgba(239,159,39,0.25)' : 'rgba(226,75,74,0.25)'}` }}>
-            <p style={{ fontSize: '12px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: '6px' }}>AQA GRADE ESTIMATE</p>
-            <p style={{ fontSize: '64px', fontWeight: 700, color: '#fff', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>{grade}</p>
-            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginTop: '8px', fontFamily: 'var(--font-mono)' }}>
+            <p style={{ fontSize: '12px', letterSpacing: '0.1em', color: 'var(--fg-secondary)', marginBottom: '6px' }}>AQA GRADE ESTIMATE</p>
+            <p style={{ fontSize: '64px', fontWeight: 700, color: 'var(--fg)', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>{grade}</p>
+            <p style={{ fontSize: '16px', color: 'var(--fg-secondary)', marginTop: '8px', fontFamily: 'var(--font-mono)' }}>
               {totalMarks.earned}/{totalMarks.max} marks · {pctScore}%
             </p>
           </div>
@@ -290,16 +290,16 @@ function GCSEPapers() {
               const q   = mock.questions.find(q => q.number === r.questionNum);
               const col = r.marks / r.maxMarks >= 0.75 ? '#00e87a' : r.marks / r.maxMarks >= 0.5 ? '#EF9F27' : '#E24B4A';
               return (
-                <div key={i} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={i} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--bg-secondary)' }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>Q{r.questionNum}</span>
-                      {q && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{q.ao}</span>}
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>Q{r.questionNum}</span>
+                      {q && <span style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>{q.ao}</span>}
                     </div>
                     <span style={{ fontSize: '15px', fontWeight: 700, color: col, fontFamily: 'var(--font-mono)' }}>{r.marks}/{r.maxMarks}</span>
                   </div>
                   <div style={{ padding: '12px 14px' }}>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{r.feedback}</p>
+                    <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{r.feedback}</p>
                   </div>
                 </div>
               );
@@ -329,11 +329,11 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#06080a', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const GHOST_BTN: React.CSSProperties = { background: 'var(--bg-secondary)', border: '1px solid #fff', borderRadius: '8px', padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
