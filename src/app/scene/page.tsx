@@ -246,9 +246,9 @@ function Scene() {
           {/* Score bar */}
           <div style={{ marginBottom: '2rem' }}>
             <div style={{
-              height: '8px', background: 'var(--surface)',
+              height: '8px', background: 'var(--bg-secondary)',
               borderRadius: '4px', overflow: 'hidden',
-              border: '1px solid var(--border)',
+              border: '2px solid var(--border-dark)',
             }}>
               <div style={{
                 height: '100%',
@@ -263,13 +263,13 @@ function Scene() {
           {/* Word reveal */}
           <div style={{
             textAlign: 'left',
-            border: '1px solid var(--border)',
+            border: '2px solid var(--border-dark)',
             borderRadius: '12px', overflow: 'hidden',
             marginBottom: '2rem',
           }}>
             <div style={{
-              padding: '10px 16px', background: 'var(--surface)',
-              borderBottom: '1px solid var(--border)',
+              padding: '10px 16px', background: 'var(--bg-secondary)',
+              borderBottom: '2px solid var(--border-dark)',
               fontSize: '11px', textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500,
             }}>
@@ -279,7 +279,7 @@ function Scene() {
               const wasFound  = tappedList.find(t => t.wordId === w.id)?.found;
               const wasTapped = tapped.has(w.id);
 
-              let borderColor = 'var(--border)';
+              let borderColor = 'var(--border-dark)';
               let statusIcon  = '👻';
               let statusColor = 'var(--muted)';
 
@@ -297,7 +297,7 @@ function Scene() {
                 <div key={w.id} style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
                   padding: '12px 16px',
-                  borderBottom: i < hiddenWordObjects.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: i < hiddenWordObjects.length - 1 ? '2px solid var(--border-dark)' : 'none',
                   borderLeft: `3px solid ${borderColor}`,
                   background: 'transparent',
                 }}>
@@ -330,7 +330,7 @@ function Scene() {
           {/* Scene with highlights */}
           <div style={{
             textAlign: 'left',
-            background: 'var(--surface)', border: '1px solid var(--border)',
+            background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
             borderRadius: '12px', padding: '16px',
             marginBottom: '2rem',
           }}>
@@ -355,7 +355,7 @@ function Scene() {
               <p style={{
                 fontSize: '13px', color: 'var(--muted)',
                 fontStyle: 'italic', marginTop: '12px',
-                paddingTop: '12px', borderTop: '1px solid var(--border)',
+                paddingTop: '12px', borderTop: '2px solid var(--border-dark)',
               }}>
                 {sceneData.translation}
               </p>
@@ -405,7 +405,7 @@ function Scene() {
 
         {/* Scene text */}
         <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
+          background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
           borderRadius: '16px', padding: '1.5rem',
           marginBottom: '1.5rem', position: 'relative',
         }}>
@@ -452,7 +452,7 @@ function Scene() {
             <p style={{
               marginTop: '10px', fontSize: '13px', color: 'var(--muted)',
               fontStyle: 'italic', lineHeight: 1.7,
-              paddingTop: '10px', borderTop: '1px solid var(--border)',
+              paddingTop: '10px', borderTop: '2px solid var(--border-dark)',
               animation: 'fadeIn 0.2s ease',
             }}>
               {sceneData.translation}
@@ -511,9 +511,9 @@ function Scene() {
                   style={{
                     padding: '8px 14px',
                     borderWidth: '1px', borderStyle: 'solid',
-                    borderColor: isTapped ? 'var(--muted)' : 'var(--border)',
+                    borderColor: isTapped ? 'var(--muted)' : 'var(--border-dark)',
                     borderRadius: '10px',
-                    background: isTapped ? 'var(--surface)' : 'var(--bg)',
+                    background: isTapped ? 'var(--bg-secondary)' : 'var(--bg)',
                     color: isTapped ? 'var(--muted)' : 'var(--fg)',
                     cursor: isTapped ? 'default' : 'pointer',
                     opacity: isTapped ? 0.5 : 1,
@@ -633,7 +633,7 @@ function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => 
       </div>
       <div style={{
         width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
+        border: '2px solid var(--border-dark)', borderRadius: '20px', padding: '2.5rem',
       }}>
         {children}
       </div>

@@ -6,6 +6,7 @@ import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
 import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import { isDue } from '@/lib/srs';
+import { markDailyTask } from '@/lib/firestore';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function FlashcardsPage() { return <AuthGuard><Flashcards /></AuthGuard>; }
@@ -69,6 +70,8 @@ function Flashcards() {
   async function handleRate(r: Rating) {
     if (!current || rating) return;
     setRating(true);
+    // Mark flashcards daily task on first rating
+    if (idx === 0) markDailyTask(uid, 'flashcards').catch(() => {});
     const prev = progress[current.id];
     if (prev) {
       await rateWord(uid, current.id, r, prev, targetLang, nativeLang);

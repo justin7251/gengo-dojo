@@ -106,8 +106,8 @@ function KanaHub() {
               cursor: 'pointer',
               fontFamily: 'inherit',
               transition: 'all 0.15s',
-              borderColor: script === s ? 'var(--teal)' : 'var(--border)',
-              background:  script === s ? 'var(--teal-light)' : 'var(--surface)',
+              borderColor: script === s ? 'var(--teal)' : 'var(--border-dark)',
+              background:  script === s ? 'var(--teal-light)' : 'var(--bg-secondary)',
               color:       script === s ? 'var(--teal-dark)'  : 'var(--muted)',
             }}
           >
@@ -129,8 +129,8 @@ function KanaHub() {
           { label: 'Due',      value: due },
         ].map(s => (
           <div key={s.label} style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
+            background: 'var(--bg-secondary)',
+            border: '2px solid var(--border-dark)',
             borderRadius: '12px',
             padding: '14px',
             textAlign: 'center',
@@ -179,7 +179,7 @@ function KanaHub() {
         </button>
       </div>
 
-      <div style={{ height: '1px', background: 'var(--border)', marginBottom: '1.5rem' }} />
+      <div style={{ height: '1px', background: 'var(--border-dark)', marginBottom: '1.5rem' }} />
 
       {/* Tap hint */}
       <p style={{
@@ -197,7 +197,7 @@ function KanaHub() {
         flexWrap: 'wrap',
       }}>
         {[
-          { label: 'Not started', bg: 'var(--surface)',    border: 'var(--border)',  color: 'var(--muted)' },
+          { label: 'Not started', bg: 'var(--bg-secondary)',    border: 'var(--border-dark)',  color: 'var(--muted)' },
           { label: 'Due',         bg: '#FAEEDA',           border: '#BA7517',        color: '#854F0B' },
           { label: 'Mastered',    bg: 'var(--teal-light)', border: 'var(--teal)',    color: 'var(--teal-dark)' },
         ].map(l => (
@@ -261,10 +261,10 @@ function KanaHub() {
                       borderRadius: '10px',
                       borderColor: mastered ? 'var(--teal)'
                         : due      ? '#BA7517'
-                        : 'var(--border)',
+                        : 'var(--border-dark)',
                       background: mastered ? 'var(--teal-light)'
                         : due      ? '#FAEEDA'
-                        : 'var(--surface)',
+                        : 'var(--bg-secondary)',
                       cursor: 'pointer',
                       gap: '2px',
                       transition: 'all 0.15s',
@@ -341,7 +341,7 @@ function Shell({ children, onBack }: {
         width: '100%',
         maxWidth: '680px',
         background: 'var(--bg)',
-        border: '1px solid var(--border)',
+        border: '2px solid var(--border-dark)',
         borderRadius: '20px',
         padding: '2.5rem',
       }}>

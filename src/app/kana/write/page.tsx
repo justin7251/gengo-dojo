@@ -128,7 +128,7 @@ function KanaWrite() {
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Draw subtle grid guide
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = 'var(--bg-secondary)';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -276,7 +276,7 @@ function KanaWrite() {
 
       {/* Mnemonic */}
       <div style={{
-        padding: '10px 14px', background: 'var(--surface)',
+        padding: '10px 14px', background: 'var(--bg-secondary)',
         border: '1px solid var(--border)', borderRadius: '10px',
         fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6,
         marginBottom: '0.75rem',

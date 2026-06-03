@@ -6,6 +6,7 @@ import { onAuth } from '@/lib/auth';
 import { getUserProfile, getUserWords, getProgress, rateWord } from '@/lib/firestore';
 import { Word, Progress, Rating, TargetLang, NativeLang, VOICE_LANG } from '@/lib/types';
 import { isDue } from '@/lib/srs';
+import { markDailyTask } from '@/lib/firestore';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function SurvivalPage() { return <AuthGuard><Survival /></AuthGuard>; }
@@ -105,6 +106,7 @@ function Survival() {
 
   async function handleAnswer(choice: string) {
     if (answered || phase !== 'playing') return;
+    if (qIdx === 0) markDailyTask(uid, 'survival').catch(() => {});
     if (timerRef.current) clearInterval(timerRef.current);
     setSelected(choice); setAnswered(true);
     const isCorrect = choice === question!.correct;

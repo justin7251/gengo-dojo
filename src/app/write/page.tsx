@@ -132,7 +132,7 @@ function VocabWrite() {
     const ctx    = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Draw subtle grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = 'var(--bg-secondary)';
     ctx.lineWidth   = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -161,85 +161,85 @@ function VocabWrite() {
   }
 
   if (loading) return (
-    <Screen>
+    <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}><Spinner /></div>
-    </Screen>
+    </Shell>
   );
 
   if (!queue.length) return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/dashboard')} />
       <div style={{ textAlign: 'center', padding: '4rem 0' }}>
         <p style={{ fontSize: '40px', marginBottom: '1rem' }}>📭</p>
-        <p style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>No words yet</p>
-        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>Generate vocabulary from the dashboard.</p>
+        <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--fg)', marginBottom: '8px' }}>No words yet</p>
+        <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', marginBottom: '2rem' }}>Generate vocabulary from the dashboard.</p>
         <button onClick={() => router.push('/dashboard')} style={WHITE_BTN}>← Dashboard</button>
       </div>
-    </Screen>
+    </Shell>
   );
 
   if (done) {
     const total = stats.correct + stats.wrong;
     const pctC  = total ? Math.round(stats.correct / total * 100) : 0;
     return (
-      <Screen>
+      <Shell>
         <TopBar onBack={() => router.push('/dashboard')} />
         <div style={{ textAlign: 'center', padding: '2rem 0' }}>
           <div style={{ fontSize: '60px', marginBottom: '1rem' }}>✍️</div>
-          <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Writing done</h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--fg)', marginBottom: '6px' }}>Writing done</h2>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', marginBottom: '2rem' }}>
             {stats.correct} good · {stats.wrong} needs work · {pctC}% accuracy
           </p>
-          <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '3px', height: '4px', marginBottom: '2rem' }}>
+          <div style={{ background: '#fff', borderRadius: '3px', height: '4px', marginBottom: '2rem' }}>
             <div style={{ height: '4px', borderRadius: '3px', width: `${pctC}%`, background: '#fff', transition: 'width 0.6s ease' }} />
           </div>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => { setIdx(0); setDone(false); setStats({ correct: 0, wrong: 0 }); clearCanvas(); }} style={WHITE_BTN}>
               Practice again
             </button>
-            <button onClick={() => router.push('/dashboard')} style={GHOST_BTN}>Dashboard</button>
+            <button onClick={() => router.push('/dashboard')} className="btn">Dashboard</button>
           </div>
         </div>
-      </Screen>
+      </Shell>
     );
   }
 
   return (
-    <Screen>
+    <Shell>
       <TopBar onBack={() => router.push('/dashboard')} />
 
       {/* Progress */}
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '5px', fontFamily: 'var(--font-mono)' }}>
           <span>{idx + 1} / {queue.length}</span><span>{pct}%</span>
         </div>
-        <div style={{ height: '2px', background: 'rgba(255,255,255,0.12)', borderRadius: '1px' }}>
+        <div style={{ height: '2px', background: '#fff', borderRadius: '1px' }}>
           <div style={{ height: '2px', background: '#fff', borderRadius: '1px', width: `${pct}%`, transition: 'width 0.4s ease' }} />
         </div>
       </div>
 
       {/* Prompt */}
       <div style={{ marginBottom: '1rem' }}>
-        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>WRITE THIS WORD</p>
+        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--fg-secondary)', marginBottom: '6px' }}>WRITE THIS WORD</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '22px', fontWeight: 600, color: '#fff' }}>{current.meaning}</span>
-              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
+              <span style={{ fontSize: '22px', fontWeight: 600, color: 'var(--fg)' }}>{current.meaning}</span>
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.1)', color: 'var(--fg-secondary)' }}>
                 {current.topic}
               </span>
-              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.1)', color: 'var(--fg-secondary)' }}>
                 {current.type}
               </span>
             </div>
 
             {!showHint ? (
               <button onClick={() => { setShowHint(true); speak(current.kanji, targetLang); }}
-                style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', padding: 0, textDecoration: 'underline' }}>
+                style={{ fontSize: '12px', color: 'var(--fg-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', padding: 0, textDecoration: 'underline' }}>
                 Show reading hint
               </button>
             ) : (
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontFamily: '"Noto Sans JP","Noto Sans SC",serif' }}>
+              <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', fontFamily: '"Noto Sans JP","Noto Sans SC",serif' }}>
                 {current.reading}
                 {current.romanization && <span style={{ fontSize: '12px', marginLeft: '6px', opacity: 0.6 }}>· {current.romanization}</span>}
               </p>
@@ -248,9 +248,9 @@ function VocabWrite() {
 
           <button onClick={() => speak(current.kanji, targetLang)} style={{
             width: '44px', height: '44px', borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.2)',
+            border: '2px solid var(--border-dark)',
             background: 'rgba(255,255,255,0.1)',
-            cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff',
+            cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--fg)',
           }}>🔊</button>
         </div>
       </div>
@@ -263,7 +263,7 @@ function VocabWrite() {
           style={{
             width: '100%', height: '260px', borderRadius: '16px',
             background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            border: '1px solid #fff',
             cursor: 'crosshair', touchAction: 'none', display: 'block',
           }}
         />
@@ -291,8 +291,8 @@ function VocabWrite() {
         <button onClick={clearCanvas} style={{ ...GHOST_BTN, flex: 1, fontSize: '13px' }}>Clear ✕</button>
         <button onClick={() => setShowGuide(g => !g)} style={{
           ...GHOST_BTN, flex: 1, fontSize: '13px',
-          borderColor: showGuide ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)',
-          background: showGuide ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
+          borderColor: showGuide ? 'rgba(255,255,255,0.5)' : '#fff',
+          background: showGuide ? '#fff' : 'var(--bg-secondary)',
         }}>
           {showGuide ? 'Hide guide' : 'Show guide'}
         </button>
@@ -300,13 +300,13 @@ function VocabWrite() {
 
       {/* Example sentence */}
       {current.example && (
-        <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', lineHeight: 1.7, marginBottom: '10px' }}>
+        <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', border: '1px solid var(--bg-secondary)', fontSize: '13px', lineHeight: 1.7, marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)' }}>💬</span>
-            <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)', fontFamily: '"Noto Sans JP","Noto Sans SC",serif' }}>{current.example}</span>
+            <span style={{ color: 'var(--fg-secondary)' }}>💬</span>
+            <span style={{ flex: 1, color: 'var(--fg-secondary)', fontFamily: '"Noto Sans JP","Noto Sans SC",serif' }}>{current.example}</span>
           </div>
           {current.example_translation && (
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '6px', paddingTop: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+            <div style={{ borderTop: '1px solid var(--bg-secondary)', marginTop: '6px', paddingTop: '6px', fontSize: '12px', color: 'var(--fg-secondary)', fontStyle: 'italic' }}>
               {current.example_translation}
             </div>
           )}
@@ -316,7 +316,7 @@ function VocabWrite() {
       {/* Self-rate buttons — appear after first stroke */}
       {hasStrokes && (
         <div style={{ animation: 'fadeIn 0.2s ease' }}>
-          <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '10px' }}>
+          <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'var(--fg-secondary)', textAlign: 'center', marginBottom: '10px' }}>
             HOW DID IT LOOK?
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
@@ -327,7 +327,7 @@ function VocabWrite() {
             ] as { r: Rating; label: string; bg: string; border: string }[]).map(({ r, label, bg, border }) => (
               <button key={r} disabled={rating} onClick={() => handleRate(r)} style={{
                 padding: '12px 0', borderRadius: '10px', border: `1px solid ${border}`,
-                background: bg, color: '#fff', fontSize: '13px', fontWeight: 500,
+                background: bg, color: 'var(--fg)', fontSize: '13px', fontWeight: 500,
                 cursor: rating ? 'not-allowed' : 'pointer', opacity: rating ? 0.5 : 1,
                 transition: 'opacity 0.15s', fontFamily: 'var(--font-ui)',
               }}>
@@ -337,7 +337,7 @@ function VocabWrite() {
           </div>
         </div>
       )}
-    </Screen>
+    </Shell>
   );
 }
 
@@ -370,8 +370,8 @@ function Screen({ children }: { children: React.ReactNode }) {
 function TopBar({ onBack }: { onBack: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#fff', letterSpacing: '-0.01em' }}>✍️ Writing</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--fg)', letterSpacing: '-0.01em' }}>✍️ Writing</span>
       <div style={{ width: '60px' }} />
     </div>
   );
@@ -383,9 +383,21 @@ const WHITE_BTN: React.CSSProperties = {
   fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)',
 };
 
-const GHOST_BTN: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-  borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.7)',
-  fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
-};
 
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+const GHOST_BTN: React.CSSProperties = {
+  background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '10px',
+  padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 3px 0 var(--border-dark)',
+};

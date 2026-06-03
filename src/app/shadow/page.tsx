@@ -342,7 +342,7 @@ function Shadow() {
               { label: 'Score <50', value: 'Reset' },
             ].map(s => (
               <div key={s.label} style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
+                background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
                 borderRadius: '12px', padding: '14px',
               }}>
                 <div style={{ fontSize: '18px', fontWeight: 600 }}>{s.value}</div>
@@ -364,7 +364,7 @@ function Shadow() {
           )}
 
           <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
+            background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
             borderRadius: '12px', padding: '14px 16px',
             fontSize: '13px', color: 'var(--muted)',
             marginBottom: '2rem', lineHeight: 1.7, textAlign: 'left',
@@ -412,9 +412,9 @@ function Shadow() {
 
           <div style={{ marginBottom: '2rem' }}>
             <div style={{
-              height: '8px', background: 'var(--surface)',
+              height: '8px', background: 'var(--bg-secondary)',
               borderRadius: '4px', overflow: 'hidden',
-              border: '1px solid var(--border)',
+              border: '2px solid var(--border-dark)',
             }}>
               <div style={{
                 height: '100%', width: `${avg}%`, borderRadius: '4px',
@@ -426,12 +426,12 @@ function Shadow() {
 
           <div style={{
             textAlign: 'left',
-            border: '1px solid var(--border)', borderRadius: '12px',
+            border: '2px solid var(--border-dark)', borderRadius: '12px',
             overflow: 'hidden', marginBottom: '2rem',
           }}>
             <div style={{
-              padding: '10px 16px', background: 'var(--surface)',
-              borderBottom: '1px solid var(--border)',
+              padding: '10px 16px', background: 'var(--bg-secondary)',
+              borderBottom: '2px solid var(--border-dark)',
               fontSize: '11px', textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500,
             }}>
@@ -440,7 +440,7 @@ function Shadow() {
             {results.map((r, i) => (
               <div key={`${r.word.id}-${i}`} style={{
                 padding: '12px 16px',
-                borderBottom: i < results.length - 1 ? '1px solid var(--border)' : 'none',
+                borderBottom: i < results.length - 1 ? '2px solid var(--border-dark)' : 'none',
                 borderLeft: `3px solid ${scoreColor(r.score)}`,
               }}>
                 <div style={{
@@ -533,7 +533,7 @@ function Shadow() {
 
       {/* Sentence card */}
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
+        background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
         borderRadius: '16px', padding: '1.5rem',
         marginBottom: '1.5rem', textAlign: 'center',
       }}>
@@ -546,7 +546,7 @@ function Shadow() {
         {current.example_translation && (
           <p style={{
             fontSize: '13px', color: 'var(--muted)', fontStyle: 'italic',
-            paddingTop: '10px', borderTop: '1px solid var(--border)',
+            paddingTop: '10px', borderTop: '2px solid var(--border-dark)',
           }}>
             {current.example_translation}
           </p>
@@ -560,9 +560,9 @@ function Shadow() {
         style={{
           width: '100%', padding: '14px',
           borderWidth: '1px', borderStyle: 'solid',
-          borderColor: playing ? 'var(--teal)' : 'var(--border)',
+          borderColor: playing ? 'var(--teal)' : 'var(--border-dark)',
           borderRadius: '12px',
-          background: playing ? 'var(--teal-light)' : 'var(--surface)',
+          background: playing ? 'var(--teal-light)' : 'var(--bg-secondary)',
           color: playing ? 'var(--teal-dark)' : 'var(--fg)',
           fontSize: '15px', fontWeight: 500,
           cursor: playing ? 'not-allowed' : 'pointer',
@@ -581,7 +581,7 @@ function Shadow() {
         style={{
           width: '100%', padding: '14px',
           borderWidth: '1px', borderStyle: 'solid',
-          borderColor: recordState === 'listening' ? '#E24B4A' : 'var(--border)',
+          borderColor: recordState === 'listening' ? '#E24B4A' : 'var(--border-dark)',
           borderRadius: '12px',
           background: recordState === 'listening' ? '#FCEBEB' : 'var(--bg)',
           color: recordState === 'listening' ? '#A32D2D' : 'var(--fg)',
@@ -661,7 +661,7 @@ function Shadow() {
           {heardText && (
             <div style={{
               padding: '12px 16px',
-              background: 'var(--surface)', border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
               borderRadius: '10px', marginBottom: '12px',
             }}>
               <p style={{
@@ -749,7 +749,7 @@ function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => 
       </div>
       <div style={{
         width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem',
+        border: '2px solid var(--border-dark)', borderRadius: '20px', padding: '2.5rem',
       }}>
         {children}
       </div>

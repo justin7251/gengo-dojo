@@ -142,7 +142,7 @@ function KanaFlashcard() {
 
       {/* Card */}
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
+        background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
         borderRadius: '20px', padding: '2.5rem 2rem', textAlign: 'center',
         minHeight: '260px', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem',
@@ -165,7 +165,7 @@ function KanaFlashcard() {
             <div style={{
               fontSize: '32px', fontWeight: 600, marginBottom: '12px',
               padding: '10px 24px', background: 'var(--bg)',
-              borderRadius: '12px', border: '1px solid var(--border)',
+              borderRadius: '12px', border: '2px solid var(--border-dark)',
               display: 'inline-block', letterSpacing: '0.05em',
             }}>
               {current?.romaji}
@@ -174,7 +174,7 @@ function KanaFlashcard() {
             <div style={{
               fontSize: '13px', color: 'var(--muted)', marginTop: '8px',
               padding: '10px 16px', background: 'var(--bg)',
-              borderRadius: '10px', border: '1px solid var(--border)',
+              borderRadius: '10px', border: '2px solid var(--border-dark)',
               maxWidth: '320px', lineHeight: 1.6,
             }}>
               💡 {current?.mnemonic}
@@ -223,7 +223,7 @@ function Shell({ children, onBack, script }: { children: React.ReactNode; onBack
           {script === 'hiragana' ? 'Hiragana あ' : 'Katakana ア'}
         </span>
       </div>
-      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem' }}>
+      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '2px solid var(--border-dark)', borderRadius: '20px', padding: '2.5rem' }}>
         {children}
       </div>
       <style>{`

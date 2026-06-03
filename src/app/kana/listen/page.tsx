@@ -107,16 +107,16 @@ function KanaListen() {
   }
 
   function choiceBg(c: KanaChar) {
-    if (answerState === 'unanswered') return 'var(--surface)';
+    if (answerState === 'unanswered') return 'var(--bg-secondary)';
     if (c.char === current.char) return '#E1F5EE';
     if (c.char === selected)     return '#FCEBEB';
-    return 'var(--surface)';
+    return 'var(--bg-secondary)';
   }
   function choiceBorder(c: KanaChar) {
-    if (answerState === 'unanswered') return 'var(--border)';
+    if (answerState === 'unanswered') return 'var(--border-dark)';
     if (c.char === current.char) return '#1D9E75';
     if (c.char === selected)     return '#E24B4A';
-    return 'var(--border)';
+    return 'var(--border-dark)';
   }
   function choiceOpacity(c: KanaChar) {
     if (answerState === 'unanswered') return 1;
@@ -162,7 +162,7 @@ function KanaListen() {
 
       {/* Sound prompt */}
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
+        background: 'var(--bg-secondary)', border: '2px solid var(--border-dark)',
         borderRadius: '16px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem',
       }}>
         <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500, marginBottom: '1.25rem' }}>
@@ -189,7 +189,7 @@ function KanaListen() {
             <span style={{
               fontSize: '18px', fontWeight: 600,
               padding: '6px 16px', background: 'var(--bg)',
-              borderRadius: '8px', border: '1px solid var(--border)',
+              borderRadius: '8px', border: '2px solid var(--border-dark)',
             }}>
               {current.romaji}
             </span>
@@ -234,8 +234,8 @@ function KanaListen() {
         <div style={{ animation: 'fadeIn 0.2s ease' }}>
           {/* Mnemonic hint */}
           <div style={{
-            padding: '10px 14px', background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '10px',
+            padding: '10px 14px', background: 'var(--bg-secondary)',
+            border: '2px solid var(--border-dark)', borderRadius: '10px',
             fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6,
             marginBottom: '12px',
           }}>
@@ -260,7 +260,7 @@ function Shell({ children, onBack, script }: { children: React.ReactNode; onBack
           {script === 'hiragana' ? 'Listen · Hiragana' : 'Listen · Katakana'}
         </span>
       </div>
-      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2.5rem' }}>
+      <div style={{ width: '100%', maxWidth: '680px', background: 'var(--bg)', border: '2px solid var(--border-dark)', borderRadius: '20px', padding: '2.5rem' }}>
         {children}
       </div>
       <style>{`

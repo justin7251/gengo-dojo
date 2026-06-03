@@ -142,7 +142,7 @@ function Interrogation() {
   ][pressure];
 
   const borderTension = [
-    'var(--border)',
+    'var(--border-dark)',
     '#3a1515',
     '#4a1818',
     '#5a1a1a',
@@ -152,7 +152,7 @@ function Interrogation() {
 
   if (loading) {
     return (
-      <InterrogationShell bg="var(--bg)" border="var(--border)">
+      <InterrogationShell bg="var(--bg)" border="var(--border-dark)">
         <div style={{ textAlign: 'center', padding: '4rem 0' }}><Spinner /></div>
       </InterrogationShell>
     );
@@ -160,7 +160,7 @@ function Interrogation() {
 
   if (phase === 'intro') {
     return (
-      <InterrogationShell bg="var(--bg)" border="var(--border)">
+      <InterrogationShell bg="var(--bg)" border="var(--border-dark)">
         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
           <div style={{ fontSize: '52px', marginBottom: '1rem' }}>🔦</div>
           <h2 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px', color: '#E24B4A' }}>
@@ -190,7 +190,7 @@ function Interrogation() {
             style={{
               width: '100%', padding: '14px',
               background: '#E24B4A', border: 'none', borderRadius: '12px',
-              color: '#fff', fontSize: '16px', fontWeight: 600,
+              color: 'var(--fg)', fontSize: '16px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
             onClick={() => { setPhase('playing'); speak(queue[0].kanji, targetLang); }}
@@ -204,7 +204,7 @@ function Interrogation() {
 
   if (phase === 'passed') {
     return (
-      <InterrogationShell bg="var(--bg)" border="var(--border)">
+      <InterrogationShell bg="var(--bg)" border="var(--border-dark)">
         <div style={{ textAlign: 'center', padding: '2rem 0' }}>
           <div style={{ fontSize: '52px', marginBottom: '1rem' }}>✓</div>
           <h2 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px', color: '#0F6E56' }}>
@@ -231,7 +231,7 @@ function Interrogation() {
           <h2 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px', color: '#E24B4A' }}>
             Cover blown
           </h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '2rem', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', marginBottom: '2rem', lineHeight: 1.7 }}>
             They knew. Your story has been reset.<br />
             Start again from Chapter 1.
           </p>
@@ -239,7 +239,7 @@ function Interrogation() {
             style={{
               width: '100%', padding: '14px',
               background: '#E24B4A', border: 'none', borderRadius: '12px',
-              color: '#fff', fontSize: '15px', fontWeight: 600,
+              color: 'var(--fg)', fontSize: '15px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
             onClick={() => router.push('/mission')}
@@ -302,7 +302,7 @@ function Interrogation() {
         {choices.map(choice => {
           const isCorrect  = choice === current?.meaning;
           const isSelected = choice === selected;
-          let bg      = 'rgba(255,255,255,0.04)';
+          let bg      = 'var(--bg-secondary)';
           let bColor  = 'rgba(255,255,255,0.1)';
           let color   = 'rgba(255,255,255,0.8)';
           let opacity = 1;

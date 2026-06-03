@@ -141,11 +141,11 @@ export default function OnboardingPage() {
       {/* Progress bar */}
       {step !== 'done' && (
         <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
             <span>Step {stepIndex + 1} of {totalSteps}</span>
             <span>{Math.round(((stepIndex + 1) / totalSteps) * 100)}%</span>
           </div>
-          <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '3px', background: 'var(--bg-secondary)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '3px', background: '#00e87a', borderRadius: '2px', width: `${((stepIndex + 1) / totalSteps) * 100}%`, transition: 'width 0.4s ease', boxShadow: '0 0 6px rgba(0,232,122,0.6)' }} />
           </div>
         </div>
@@ -155,11 +155,11 @@ export default function OnboardingPage() {
       {step === 'subjects' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '2rem' }}>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>Welcome!</p>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '6px' }}>Welcome!</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--fg)', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
               What do you want to learn?
             </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>
               Pick everything you study. You can change this later.
             </p>
           </div>
@@ -171,8 +171,8 @@ export default function OnboardingPage() {
                 <button key={s.id} onClick={() => toggleSubject(s.id)} style={{
                   display: 'flex', alignItems: 'center', gap: '16px',
                   padding: '16px 18px', borderRadius: '16px', cursor: 'pointer',
-                  border: `2px solid ${selected ? s.color + '60' : 'rgba(255,255,255,0.08)'}`,
-                  background: selected ? s.color + '12' : 'rgba(255,255,255,0.03)',
+                  border: `2px solid ${selected ? s.color + '60' : 'var(--bg-secondary)'}`,
+                  background: selected ? s.color + '12' : 'var(--bg-secondary)',
                   fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
                   transition: 'all 0.15s',
                 }}>
@@ -204,10 +204,10 @@ export default function OnboardingPage() {
       {step === 'year' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--fg)', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
               What year are you in?
             </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>
               This helps us pick the right level for you.
             </p>
           </div>
@@ -219,8 +219,8 @@ export default function OnboardingPage() {
                 <button key={y.id} onClick={() => setYearGroup(y.id)} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '14px 18px', borderRadius: '14px', cursor: 'pointer',
-                  border: `2px solid ${selected ? 'rgba(0,232,122,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  background: selected ? 'rgba(0,232,122,0.1)' : 'rgba(255,255,255,0.03)',
+                  border: `2px solid ${selected ? 'rgba(0,232,122,0.5)' : 'var(--bg-secondary)'}`,
+                  background: selected ? 'rgba(0,232,122,0.1)' : 'var(--bg-secondary)',
                   fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
                   transition: 'all 0.15s',
                 }}>
@@ -228,7 +228,7 @@ export default function OnboardingPage() {
                     <p style={{ fontSize: '16px', fontWeight: 600, color: selected ? '#fff' : 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>
                       {y.label}
                     </p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{y.sub}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--fg-secondary)' }}>{y.sub}</p>
                   </div>
                   {selected && (
                     <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#00e87a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#03080a', fontWeight: 800, flexShrink: 0 }}>
@@ -241,7 +241,7 @@ export default function OnboardingPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setStep('subjects')} style={GHOST_BTN}>Back</button>
+            <button onClick={() => setStep('subjects')} className="btn">Back</button>
             <button onClick={() => setStep('topics')} disabled={!yearGroup} style={{ ...nextBtn(!!yearGroup), flex: 1 }}>
               Continue &#8594;
             </button>
@@ -253,10 +253,10 @@ export default function OnboardingPage() {
       {step === 'topics' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--fg)', lineHeight: 1.2, marginBottom: '8px', letterSpacing: '-0.02em' }}>
               What feels hardest?
             </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>
               Pick the topics you find most difficult. We will focus on these first.
             </p>
           </div>
@@ -272,7 +272,7 @@ export default function OnboardingPage() {
                   padding: '10px 16px', borderRadius: '99px', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)', fontSize: '14px',
                   border: `2px solid ${selected ? subjectColor + '60' : 'rgba(255,255,255,0.1)'}`,
-                  background: selected ? subjectColor + '15' : 'rgba(255,255,255,0.04)',
+                  background: selected ? subjectColor + '15' : 'var(--bg-secondary)',
                   color: selected ? '#fff' : 'rgba(255,255,255,0.55)',
                   fontWeight: selected ? 600 : 400,
                   transition: 'all 0.15s',
@@ -286,13 +286,13 @@ export default function OnboardingPage() {
           </div>
 
           {weakTopics.length === 0 && (
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '1rem', textAlign: 'center' }}>
               Pick at least one — or skip if you want to explore everything
             </p>
           )}
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setStep('year')} style={GHOST_BTN}>Back</button>
+            <button onClick={() => setStep('year')} className="btn">Back</button>
             <button onClick={handleFinish} disabled={saving} style={{ ...nextBtn(true), flex: 1 }}>
               {saving ? 'Setting up...' : "Let's go! &#8594;"}
             </button>
@@ -306,10 +306,10 @@ export default function OnboardingPage() {
           <div style={{ fontSize: '72px', marginBottom: '1rem', animation: 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
             &#127881;
           </div>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#fff', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--fg)', marginBottom: '8px', letterSpacing: '-0.02em' }}>
             You are all set!
           </h2>
-          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '15px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>
             Taking you to your dashboard...
           </p>
         </div>
@@ -335,7 +335,7 @@ function nextBtn(enabled: boolean): React.CSSProperties {
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#06080f', backgroundImage: 'radial-gradient(ellipse at top, #0d1a0f 0%, #06080f 60%)', display: 'flex', flexDirection: 'column', padding: '2rem 1.5rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', backgroundImage: 'radial-gradient(ellipse at top, #0d1a0f 0%, #06080f 60%)', display: 'flex', flexDirection: 'column', padding: '2rem 1.5rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(0,232,122,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,0.02) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
@@ -344,4 +344,4 @@ function Screen({ children }: { children: React.ReactNode }) {
   );
 }
 
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', padding: '14px 20px', color: 'rgba(255,255,255,0.6)', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const GHOST_BTN: React.CSSProperties = { background: 'var(--bg-secondary)', border: '1px solid #fff', borderRadius: '12px', padding: '14px 20px', color: 'var(--fg-secondary)', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
