@@ -245,3 +245,52 @@ export async function getUserTopics(
   snap.docs.forEach(d => topics.add((d.data() as UserWord).topic));
   return Array.from(topics);
 }
+
+// ── Daily task tracking ────────────────────────────────
+
+export type DailyTaskId = 'flashcards' | 'quiz' | 'mission' | 'survival';
+
+export interface DailyProgress {
+  date:      string;                          // YYYY-MM-DD
+  completed: Partial<Record<DailyTaskId, boolean>>;
+  streakHistory: string[];                    // last 35 dates that were fully completed
+}
+
+export function todayStr(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+export async function getDailyProgress(uid: string): Promise<DailyProgress> {
+  const snap = await getDoc(doc(db, 'daily_progress', uid));
+  const today = todayStr();
+  if (!snap.exists()) return { date: today, completed: {}, streakHistory: [] };
+  const data = snap.data() as DailyProgress;
+  // Reset tasks if it's a new day (keep streakHistory)
+  if (data.date !== today) return { date: today, completed: {}, streakHistory: data.streakHistory ?? [] };
+  return data;
+}
+
+export async function markDailyTask(
+  uid:    string,
+  taskId: DailyTaskId,
+): Promise<DailyProgress> {
+  const current = await getDailyProgress(uid);
+  const updated: DailyProgress = {
+    ...current,
+    completed: { ...current.completed, [taskId]: true },
+  };
+  // If all 4 done and today not already in history, record it
+  const allDone = (['flashcards','quiz','mission','survival'] as DailyTaskId[]).every(t => updated.completed[t]);
+  const today   = todayStr();
+  if (allDone && !updated.streakHistory.includes(today)) {
+    updated.streakHistory = [...(updated.streakHistory ?? []), today].slice(-70); // keep ~10 weeks
+  }
+  await setDoc(doc(db, 'daily_progress', uid), updated);
+  return updated;
+}
+
+export async function getStreakHistory(uid: string): Promise<string[]> {
+  const snap = await getDoc(doc(db, 'daily_progress', uid));
+  if (!snap.exists()) return [];
+  return (snap.data() as DailyProgress).streakHistory ?? [];
+}

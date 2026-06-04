@@ -130,19 +130,19 @@ export function ScienceTopicPage({ subject }: Props) {
     <Screen color={color} onBack={() => router.push('/gcse/science')}>
       <TopBar onBack={() => router.push('/gcse/science')} title={`${meta.emoji} ${meta.label}`} />
 
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+      <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
         AI generates AQA-style questions. Answers marked against the mark scheme with model answers provided.
       </p>
 
       {/* Paper filter */}
-      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>PAPER</p>
+      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'var(--fg-secondary)', marginBottom: '8px' }}>PAPER</p>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '1.25rem' }}>
         {(['Both', 'P1', 'P2'] as ('P1'|'P2'|'Both')[]).map(p => (
           <button key={p} onClick={() => { setPaper(p); setSelectedTopic(null); }} style={{
             flex: 1, padding: '8px', borderRadius: '10px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 500,
             border: `1px solid ${paper === p ? `${color}55` : 'rgba(255,255,255,0.1)'}`,
-            background: paper === p ? `${color}15` : 'rgba(255,255,255,0.04)',
+            background: paper === p ? `${color}15` : 'var(--bg-secondary)',
             color: paper === p ? color : 'rgba(255,255,255,0.5)', transition: 'all 0.15s',
           }}>
             {p === 'Both' ? 'Both papers' : p === 'P1' ? 'Paper 1' : 'Paper 2'}
@@ -151,15 +151,15 @@ export function ScienceTopicPage({ subject }: Props) {
       </div>
 
       {/* Topic */}
-      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>
-        TOPIC <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>— optional</span>
+      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'var(--fg-secondary)', marginBottom: '8px' }}>
+        TOPIC <span style={{ color: 'var(--muted)', fontWeight: 400 }}>— optional</span>
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '1.25rem' }}>
         <button onClick={() => setSelectedTopic(null)} style={{
           padding: '6px 12px', borderRadius: '99px', cursor: 'pointer',
           fontFamily: 'var(--font-ui)', fontSize: '12px',
           border: `1px solid ${!selectedTopic ? `${color}55` : 'rgba(255,255,255,0.1)'}`,
-          background: !selectedTopic ? `${color}15` : 'rgba(255,255,255,0.04)',
+          background: !selectedTopic ? `${color}15` : 'var(--bg-secondary)',
           color: !selectedTopic ? color : 'rgba(255,255,255,0.5)', transition: 'all 0.15s',
         }}>Mixed</button>
         {allTopics.map(t => (
@@ -167,14 +167,14 @@ export function ScienceTopicPage({ subject }: Props) {
             padding: '6px 12px', borderRadius: '99px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '12px',
             border: `1px solid ${selectedTopic === t ? `${color}55` : 'rgba(255,255,255,0.1)'}`,
-            background: selectedTopic === t ? `${color}15` : 'rgba(255,255,255,0.04)',
+            background: selectedTopic === t ? `${color}15` : 'var(--bg-secondary)',
             color: selectedTopic === t ? color : 'rgba(255,255,255,0.5)', transition: 'all 0.15s',
           }}>{t}</button>
         ))}
       </div>
 
       {/* Question type */}
-      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>QUESTION TYPE</p>
+      <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'var(--fg-secondary)', marginBottom: '8px' }}>QUESTION TYPE</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '2rem' }}>
         {([
           { key: 'mixed',    label: 'Mixed',    desc: '' },
@@ -187,7 +187,7 @@ export function ScienceTopicPage({ subject }: Props) {
             padding: '6px 12px', borderRadius: '99px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', fontSize: '12px',
             border: `1px solid ${qType === qt.key ? `${color}55` : 'rgba(255,255,255,0.1)'}`,
-            background: qType === qt.key ? `${color}15` : 'rgba(255,255,255,0.04)',
+            background: qType === qt.key ? `${color}15` : 'var(--bg-secondary)',
             color: qType === qt.key ? color : 'rgba(255,255,255,0.5)', transition: 'all 0.15s',
             display: 'flex', alignItems: 'center', gap: '5px',
           }}>
@@ -211,10 +211,10 @@ export function ScienceTopicPage({ subject }: Props) {
       <TopBar onBack={() => router.push('/gcse/science')} title={`${meta.emoji} ${meta.label}`} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <Spinner color={color} />
-        <p style={{ fontSize: '16px', color: '#fff', marginTop: '1.5rem', marginBottom: '6px' }}>
+        <p style={{ fontSize: '16px', color: 'var(--fg)', marginTop: '1.5rem', marginBottom: '6px' }}>
           {results.length === 0 ? 'Generating questions…' : 'Marking answers…'}
         </p>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+        <p style={{ fontSize: '13px', color: 'var(--fg-secondary)' }}>
           {results.length === 0
             ? `${meta.label} · ${selectedTopic ?? 'mixed topics'}`
             : 'Checking against AQA mark scheme'}
@@ -233,31 +233,31 @@ export function ScienceTopicPage({ subject }: Props) {
           <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '99px', background: `${color}18`, color: `${color}bb`, border: `1px solid ${color}28` }}>
             {questions.length} questions
           </span>
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>
             {questions.reduce((s, q) => s + q.marks, 0)} marks total
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '2rem' }}>
           {questions.map(q => (
-            <div key={q.number} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div key={q.number} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '16px', border: '1px solid var(--bg-secondary)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>Q{q.number}</span>
                 <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: `${color}15`, color: `${color}aa` }}>
                   {q.marks} mark{q.marks !== 1 ? 's' : ''}
                 </span>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>
                   {q.topic}
                 </span>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'var(--bg-secondary)', color: 'var(--fg-secondary)' }}>
                   {q.type}
                 </span>
               </div>
 
-              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, marginBottom: '8px', whiteSpace: 'pre-wrap' }}>
+              <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.7, marginBottom: '8px', whiteSpace: 'pre-wrap' }}>
                 {q.question}
               </p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', marginBottom: '12px' }}>
+              <p style={{ fontSize: '11px', color: 'var(--fg-secondary)', fontStyle: 'italic', marginBottom: '12px' }}>
                 💡 {q.hint}
               </p>
 
@@ -267,13 +267,13 @@ export function ScienceTopicPage({ subject }: Props) {
                 placeholder={`Answer Q${q.number} here…${q.type === 'calculate' ? '\n\nRemember to show working and include units.' : ''}`}
                 rows={q.marks >= 6 ? 8 : q.marks >= 3 ? 5 : 3}
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
-                  color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '13px',
+                  width: '100%', background: 'var(--bg-secondary)',
+                  border: '2px solid var(--border-dark)', borderRadius: '10px',
+                  color: 'var(--fg)', fontFamily: 'var(--font-ui)', fontSize: '13px',
                   padding: '10px 12px', outline: 'none', resize: 'vertical', lineHeight: 1.6,
                 }}
               />
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '4px', textAlign: 'right' }}>
+              <p style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
                 {(answers[q.number] ?? '').split(/\s+/).filter(Boolean).length} words
               </p>
             </div>
@@ -305,10 +305,10 @@ export function ScienceTopicPage({ subject }: Props) {
           borderRadius: '16px', padding: '20px', textAlign: 'center', marginBottom: '1.5rem',
           border: `1px solid ${totalMarks.earned / totalMarks.max >= 0.8 ? 'rgba(0,232,122,0.3)' : totalMarks.earned / totalMarks.max >= 0.6 ? `${color}35` : 'rgba(226,75,74,0.3)'}`,
         }}>
-          <p style={{ fontSize: '40px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+          <p style={{ fontSize: '40px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
             {totalMarks.earned}/{totalMarks.max}
           </p>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', marginTop: '6px' }}>
             {Math.round(totalMarks.earned / totalMarks.max * 100)}% · {meta.label}
           </p>
         </div>
@@ -319,11 +319,11 @@ export function ScienceTopicPage({ subject }: Props) {
             const col = r.marks === r.maxMarks ? '#00e87a' : r.marks > 0 ? '#EF9F27' : '#E24B4A';
             const q   = questions.find(q => q.number === r.questionNum);
             return (
-              <div key={i} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={i} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--bg-secondary)' }}>
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>Q{r.questionNum}</span>
-                    {q && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{q.topic}</span>}
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>Q{r.questionNum}</span>
+                    {q && <span style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>{q.topic}</span>}
                   </div>
                   <span style={{ fontSize: '15px', fontWeight: 700, color: col, fontFamily: 'var(--font-mono)' }}>
                     {r.marks}/{r.maxMarks}
@@ -332,22 +332,22 @@ export function ScienceTopicPage({ subject }: Props) {
                 <div style={{ padding: '12px 14px' }}>
                   {/* Student answer */}
                   <div style={{ marginBottom: '10px' }}>
-                    <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px' }}>YOUR ANSWER</p>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: '5px' }}>YOUR ANSWER</p>
+                    <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>
                       "{(answers[r.questionNum] ?? '(no answer)').slice(0, 180)}{(answers[r.questionNum]?.length ?? 0) > 180 ? '…' : ''}"
                     </p>
                   </div>
                   {/* Model answer */}
                   <div style={{ marginBottom: '10px' }}>
-                    <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px' }}>MODEL ANSWER</p>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: '5px' }}>MODEL ANSWER</p>
+                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '8px', padding: '10px 12px', border: '1px solid var(--bg-secondary)' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                         {r.modelAnswer}
                       </p>
                     </div>
                   </div>
                   {/* Feedback */}
-                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>{r.feedback}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>{r.feedback}</p>
                 </div>
               </div>
             );
@@ -370,19 +370,14 @@ export function ScienceTopicPage({ subject }: Props) {
 // ── Shared UI ──────────────────────────────────────
 function Screen({ children, color, onBack }: { children: React.ReactNode; color: string; onBack: () => void }) {
   return (
-    <main style={{
-      minHeight: '100vh',
-      background: '#040e08',
-      backgroundImage: `radial-gradient(ellipse at top, ${color}10 0%, #040e08 60%)`,
-      display: 'flex', flexDirection: 'column',
-      padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: `linear-gradient(${color}15 1px,transparent 1px),linear-gradient(90deg,${color}15 1px,transparent 1px)`, backgroundSize: '40px 40px', opacity: 0.35 }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: `${color}10`, filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <button onClick={onBack} className="btn" style={{ fontSize: '13px', padding: '8px 14px' }}>← Back</button>
+        </div>
         {children}
       </div>
-      <style>{`@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }`}</style>
     </main>
   );
 }
@@ -390,12 +385,14 @@ function Screen({ children, color, onBack }: { children: React.ReactNode; color:
 function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-      <button onClick={onBack} style={GHOST_BTN}>← Back</button>
-      <span style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>{title}</span>
+      <button onClick={onBack} className="btn">← Back</button>
+      <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>{title}</span>
       <div style={{ width: '60px' }} />
     </div>
   );
 }
 
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#040e08', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+
+const WHITE_BTN: React.CSSProperties = { background: 'var(--green)', border: '2.5px solid var(--green-dark)', borderRadius: '12px', padding: '11px 24px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 4px 0 var(--green-dark)' };
+const GHOST_BTN: React.CSSProperties = { background: '#fff', border: '2.5px solid var(--border-dark)', borderRadius: '10px', padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 3px 0 var(--border-dark)' };
