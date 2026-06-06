@@ -10,7 +10,7 @@ import {
   getProgress, initProgress,
   getUserTopics,
   getDailyProgress, markDailyTask,
-  getStreakHistory,
+  getStreakHistory, seedStreakHistory,
   DailyTaskId, DailyProgress,
 } from '@/lib/firestore';
 import {
@@ -150,7 +150,11 @@ function Dashboard() {
         setWords(w); setProgress(pr); setTopics(t);
         setAgent(ag ?? await createAgentProfile(user.uid, p.targetLang));
         setDailyProgress(dp);
-        setStreakHistory(sh);
+        // Seed history for existing users who have a streak but no calendar history
+        const history = sh.length === 0 && (ag?.streakDays ?? 0) > 0
+          ? await seedStreakHistory(user.uid, ag!.streakDays)
+          : sh;
+        setStreakHistory(history);
       }
       setLoading(false);
       setTimeout(() => setReady(true), 60);
@@ -337,6 +341,7 @@ function Dashboard() {
             { emoji: '💀', label: 'Survival',   sub: '3 lives · timed',                          route: '/survival',   color: 'var(--red)',    bg: 'var(--red-light)',    taskId: 'survival' as DailyTaskId },
             { emoji: '✍️', label: 'Write',      sub: 'Canvas practice',                          route: '/write',      color: 'var(--pink)',   bg: 'var(--purple-light)', taskId: null },
             { emoji: '🎤', label: 'Shadow',     sub: 'Pronunciation',                            route: '/shadow',     color: 'var(--orange)', bg: 'var(--orange-light)', taskId: null },
+            { emoji: '🗺️', label: 'Scene',      sub: 'Reading in context',                       route: '/scene',      color: 'var(--green)',  bg: 'var(--green-light)',  taskId: null },
             ...(profile?.targetLang === 'ja' || profile?.targetLang === 'ko'
               ? [{ emoji: 'あ', label: profile.targetLang === 'ja' ? 'Kana' : 'Hangul', sub: 'Characters', route: '/kana', color: 'var(--green)', bg: 'var(--green-light)', taskId: null }]
               : []),

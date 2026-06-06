@@ -79,7 +79,7 @@ function ScienceEquations() {
   const current    = flashQueue[cardIdx % Math.max(flashQueue.length, 1)];
 
   const subjectColor = (s: string) =>
-    s === 'physics' ? '#7F77DD' : s === 'chemistry' ? '#EF9F27' : '#00e87a';
+    s === 'physics' ? 'var(--purple)' : s === 'chemistry' ? 'var(--orange)' : 'var(--green)';
 
   // ── Simple equation solver ─────────────────────────
   function parseAndSolve(eq: Equation, inputs: Record<string, string>): string {
@@ -288,7 +288,7 @@ function ScienceEquations() {
                   <button onClick={() => { setCardIdx(i => i + 1); setRevealed(false); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid rgba(226,75,74,0.35)', background: 'rgba(226,75,74,0.12)', color: '#ff8080', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                     Still learning
                   </button>
-                  <button onClick={() => { setKnown(prev => new Set([...prev, current.id])); setCardIdx(i => i + 1); setRevealed(false); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,232,122,0.35)', background: 'rgba(0,232,122,0.12)', color: '#00e87a', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                  <button onClick={() => { setKnown(prev => new Set([...prev, current.id])); setCardIdx(i => i + 1); setRevealed(false); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid var(--green)55', background: 'var(--green-light)', color: 'var(--green)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                     ✓ Know it
                   </button>
                 </div>
@@ -375,7 +375,7 @@ function ScienceEquations() {
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', backgroundImage: 'radial-gradient(ellipse at top, #0a1535 0%, #050a18 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(55,138,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </main>
@@ -390,7 +390,7 @@ function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
     </div>
   );
 }
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#050a18', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const WHITE_BTN: React.CSSProperties = { background: 'var(--green)', border: '2.5px solid var(--green-dark)', borderRadius: '12px', padding: '11px 24px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 4px 0 var(--green-dark)' };
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (

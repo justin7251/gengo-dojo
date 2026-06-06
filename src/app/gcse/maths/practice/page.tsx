@@ -62,7 +62,7 @@ function MathsPractice() {
   const secs = timeLeft % 60;
   const elapsed  = PAPER_META[paper].time * 60 - timeLeft;
   const timerPct = Math.round((elapsed / (PAPER_META[paper].time * 60)) * 100);
-  const timerColor = timeLeft < 600 ? '#E24B4A' : timeLeft < 1800 ? '#EF9F27' : '#378ADD';
+  const timerColor = timeLeft < 600 ? 'var(--red)' : timeLeft < 1800 ? 'var(--orange)' : 'var(--blue)';
 
   async function generatePaper() {
     setPhase('generating');
@@ -275,7 +275,7 @@ function MathsPractice() {
         {/* Per-question */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '2rem' }}>
           {results.map((r, i) => {
-            const col = r.marks === r.maxMarks ? '#00e87a' : r.marks > 0 ? '#EF9F27' : '#E24B4A';
+            const col = r.marks === r.maxMarks ? 'var(--green)' : r.marks > 0 ? 'var(--orange)' : 'var(--red)';
             return (
               <div key={i} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--bg-secondary)' }}>
                 <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bg-secondary)', display: 'flex', justifyContent: 'space-between' }}>
@@ -307,7 +307,7 @@ function MathsPractice() {
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', backgroundImage: 'radial-gradient(ellipse at top, #0a1535 0%, #050a18 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(55,138,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
       </main>
@@ -322,7 +322,7 @@ function TopBar({ onBack, title }: { onBack: () => void; title: string }) {
     </div>
   );
 }
-const WHITE_BTN: React.CSSProperties = { background: '#fff', border: 'none', borderRadius: '10px', padding: '11px 24px', color: '#050a18', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const WHITE_BTN: React.CSSProperties = { background: 'var(--green)', border: '2.5px solid var(--green-dark)', borderRadius: '12px', padding: '11px 24px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: '0 4px 0 var(--green-dark)' };
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (

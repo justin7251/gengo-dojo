@@ -1,9 +1,11 @@
 'use client';
 import { Spinner } from '@/components/Spinner';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
+import { saveLessonProgress, getLessonProgress } from '@/lib/gcse-lessons';
+import { onAuth } from '@/lib/auth';
 import { LessonCardSwiper, Lesson } from '@/components/GCSELessonCard';
 
 export default function GCSEEnglishLearnPage() {
@@ -29,16 +31,29 @@ const TOPICS = [
   },
 ];
 
-const ACCENT = '#7F77DD';
+const ACCENT = 'var(--purple)';
 
 type Phase = 'pick' | 'loading' | 'lesson';
 
 function EnglishLearn() {
   const router = useRouter();
+  const [uid, setUid]               = useState('');
+  const [lessonProgress, setLessonProgress] = useState<Record<string, {score:number;total:number}>>({});
   const [phase, setPhase]       = useState<Phase>('pick');
   const [lesson, setLesson]     = useState<Lesson | null>(null);
   const [activeTopic, setActiveTopic] = useState('');
   const [error, setError]       = useState('');
+
+  useEffect(() => {
+    return onAuth(async user => {
+      if (!user) return;
+      setUid(user.uid);
+      const prog = await getLessonProgress(user.uid);
+      const simplified: Record<string, {score:number;total:number}> = {};
+      Object.entries(prog).forEach(([k,v]) => { simplified[k] = { score: v.score, total: v.totalCards }; });
+      setLessonProgress(simplified);
+    });
+  }, []);
 
   async function loadLesson(topic: string) {
     setActiveTopic(topic);
@@ -76,6 +91,12 @@ function EnglishLearn() {
         lesson={lesson}
         accentColor={ACCENT}
         practiseRoute="/gcse/english/reading"
+        onComplete={async (score, total) => {
+          if (!uid || !lesson) return;
+          const id = `${lesson.subject ?? 'english'}-${lesson.topic}`;
+          await saveLessonProgress(uid, id, score, total);
+          setLessonProgress(prev => ({ ...prev, [id]: { score, total } }));
+        }}
         onBack={() => { setPhase('pick'); setLesson(null); }}
       />
     </Shell>
@@ -104,37 +125,34 @@ function EnglishLearn() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {TOPICS.map(group => (
           <div key={group.section}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: `${ACCENT}aa`, fontWeight: 600, marginBottom: '8px' }}>
+            <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'var(--muted)', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>
               {group.section.toUpperCase()}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {group.items.map(topic => (
-                <button key={topic} onClick={() => loadLesson(topic)} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '12px 14px', borderRadius: '10px', cursor: 'pointer',
-                  border: `1px solid rgba(127,119,221,0.2)`,
-                  background: 'rgba(127,119,221,0.06)',
-                  fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
-                  transition: 'all 0.15s',
-                }}>
-                  <span style={{ fontSize: '14px', color: 'var(--fg-secondary)' }}>{topic}</span>
-                  <span style={{ fontSize: '18px', color: `${ACCENT}80` }}>›</span>
-                </button>
-              ))}
+              {group.items.map(topic => {
+                const progKey = `english-${topic}`;
+                const done    = !!lessonProgress[progKey];
+                return (
+                  <button key={topic} onClick={() => loadLesson(topic)} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 14px', borderRadius: '12px', cursor: 'pointer',
+                    border: `2.5px solid ${done ? 'var(--green)55' : 'var(--border-dark)'}`,
+                    background: done ? 'var(--green-light)' : '#fff',
+                    fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
+                    transition: 'all 0.12s', boxShadow: done ? '0 3px 0 var(--green-dark)55' : '0 3px 0 var(--border-dark)',
+                  }}>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: done ? '#2a7a00' : 'var(--fg-secondary)' }}>{topic}</span>
+                    <span style={{ fontSize: done ? '16px' : '18px', color: done ? 'var(--green)' : 'var(--purple)' }}>
+                      {done ? '✅' : '›'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
     </Shell>
-  );
-}
-
-function Screen({ children }: { children: React.ReactNode }) {
-  return (
-    <main style={{ minHeight: '100vh', background: '#080614', backgroundImage: 'radial-gradient(ellipse at top, #130d30 0%, #080614 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 2.5rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(127,119,221,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(127,119,221,0.025) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
-    </main>
   );
 }
 

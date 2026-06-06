@@ -57,9 +57,9 @@ const ALL_TOPICS: { subject: string; topic: string }[] = [
 ];
 
 const SUBJECT_COLOR: Record<string, string> = {
-  maths:   '#378ADD',
-  english: '#7F77DD',
-  science: '#00e87a',
+  maths:   'var(--blue)',
+  english: 'var(--purple)',
+  science: 'var(--green)',
 };
 
 type JobStatus = 'pending' | 'generating' | 'done' | 'error';
@@ -174,9 +174,9 @@ export default function AdminBulkGeneratePage() {
   }
 
   if (!authed || loading) return (
-    <Screen>
+    <Shell>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner /></div>
-    </Screen>
+    </Shell>
   );
 
   const doneCount  = jobs.filter(j => j.status === 'done').length;
@@ -185,25 +185,25 @@ export default function AdminBulkGeneratePage() {
   const progress   = totalJobs > 0 ? Math.round((doneCount + errorCount) / totalJobs * 100) : 0;
 
   return (
-    <Screen>
+    <Shell>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/gcse/admin')} style={GHOST_BTN}>Back</button>
+        <button onClick={() => router.push('/gcse/admin')} className="btn">Back</button>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)' }}>ADMIN</p>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Bulk Generate</h1>
+          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--fg-secondary)' }}>ADMIN</p>
+          <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>Bulk Generate</h1>
         </div>
         <div style={{ width: '60px' }} />
       </div>
 
       {/* Job progress */}
       {jobs.length > 0 && (
-        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '14px 16px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '14px', padding: '14px 16px', marginBottom: '1.25rem', border: '1px solid var(--bg-secondary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--fg-secondary)', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
             <span>{doneCount}/{totalJobs} done{errorCount > 0 ? ` · ${errorCount} errors` : ''}</span>
             <span>{progress}%</span>
           </div>
-          <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
+          <div style={{ height: '4px', background: 'var(--bg-secondary)', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
             <div style={{ height: '4px', background: '#00e87a', borderRadius: '2px', width: `${progress}%`, transition: 'width 0.4s', boxShadow: '0 0 6px rgba(0,232,122,0.5)' }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '180px', overflowY: 'auto' }}>
@@ -213,12 +213,12 @@ export default function AdminBulkGeneratePage() {
                   {job.status === 'done' ? '✓' : job.status === 'error' ? '✗' : job.status === 'generating' ? '⟳' : '○'}
                 </span>
                 <span style={{
-                  color: job.status === 'done' ? '#00e87a' : job.status === 'error' ? '#ff8080' : job.status === 'generating' ? '#EF9F27' : 'rgba(255,255,255,0.35)',
+                  color: job.status === 'done' ? '#00e87a' : job.status === 'error' ? '#ff8080' : job.status === 'generating' ? '#EF9F27' : 'var(--muted)',
                   flex: 1,
                 }}>
                   {job.topic}
                 </span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>{job.subject}</span>
+                <span style={{ fontSize: '10px', color: 'var(--muted)', flexShrink: 0 }}>{job.subject}</span>
               </div>
             ))}
           </div>
@@ -229,14 +229,14 @@ export default function AdminBulkGeneratePage() {
       {!running && (
         <>
           {/* Auto-publish toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--bg-secondary)', marginBottom: '1rem' }}>
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>Auto-publish</p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>Publish lessons without reviewing first</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)', marginBottom: '2px' }}>Auto-publish</p>
+              <p style={{ fontSize: '11px', color: 'var(--fg-secondary)' }}>Publish lessons without reviewing first</p>
             </div>
             <button onClick={() => setAutoPublish(p => !p)} style={{
               width: '44px', height: '24px', borderRadius: '99px', border: 'none', cursor: 'pointer', padding: 0,
-              background: autoPublish ? '#00e87a' : 'rgba(255,255,255,0.15)',
+              background: autoPublish ? '#00e87a' : '#fff',
               position: 'relative', transition: 'background 0.2s',
             }}>
               <span style={{ position: 'absolute', top: '3px', left: autoPublish ? '23px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
@@ -249,9 +249,9 @@ export default function AdminBulkGeneratePage() {
               <button key={f} onClick={() => setFilterSubject(f)} style={{
                 flex: 1, padding: '7px', borderRadius: '8px', cursor: 'pointer',
                 fontFamily: 'var(--font-ui)', fontSize: '11px',
-                border: `1px solid ${filterSubject === f ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)'}`,
-                background: filterSubject === f ? 'rgba(255,255,255,0.1)' : 'transparent',
-                color: filterSubject === f ? '#fff' : 'rgba(255,255,255,0.4)',
+                border: `1px solid ${filterSubject === f ? 'var(--muted)' : 'var(--muted)'}`,
+                background: filterSubject === f ? 'var(--blue-light)' : '#fff',
+                color: filterSubject === f ? 'var(--blue-dark)' : 'var(--muted)',
                 transition: 'all 0.15s',
               }}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -264,11 +264,11 @@ export default function AdminBulkGeneratePage() {
             <button onClick={selectAll} style={{ fontSize: '12px', color: '#00e87a', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', padding: 0 }}>
               Select all new ({newTopics.filter(t => !existing.has(topicKey(t))).length})
             </button>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>·</span>
-            <button onClick={clearAll} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', padding: 0 }}>
+            <span style={{ color: 'var(--muted)', fontSize: '12px' }}>·</span>
+            <button onClick={clearAll} style={{ fontSize: '12px', color: 'var(--fg-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', padding: 0 }}>
               Clear
             </button>
-            <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--fg-secondary)', fontFamily: 'var(--font-mono)' }}>
               {selected.size} selected
             </span>
           </div>
@@ -276,7 +276,7 @@ export default function AdminBulkGeneratePage() {
           {/* Topic list — new */}
           {newTopics.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
-              <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
+              <p style={{ fontSize: '10px', letterSpacing: '0.08em', color: 'var(--fg-secondary)', marginBottom: '6px' }}>
                 NOT GENERATED YET — {newTopics.length} topics
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -288,15 +288,15 @@ export default function AdminBulkGeneratePage() {
                     <button key={key} onClick={() => toggleTopic(key)} style={{
                       display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', borderRadius: '10px', cursor: 'pointer',
-                      border: `1px solid ${isSelected ? color + '50' : 'rgba(255,255,255,0.08)'}`,
-                      background: isSelected ? color + '10' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${isSelected ? color + '50' : 'var(--bg-secondary)'}`,
+                      background: isSelected ? color + '10' : 'var(--bg-secondary)',
                       fontFamily: 'var(--font-ui)', textAlign: 'left', width: '100%',
                       transition: 'all 0.12s',
                     }}>
-                      <div style={{ width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0, border: `1.5px solid ${isSelected ? color : 'rgba(255,255,255,0.2)'}`, background: isSelected ? color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0, border: `1.5px solid ${isSelected ? color : 'var(--muted)'}`, background: isSelected ? color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
                         {isSelected && <span style={{ fontSize: '10px', color: '#03080a', fontWeight: 800 }}>&#10003;</span>}
                       </div>
-                      <span style={{ fontSize: '13px', color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)', flex: 1 }}>{t.topic}</span>
+                      <span style={{ fontSize: '13px', color: isSelected ? '#fff' : 'var(--muted)', flex: 1 }}>{t.topic}</span>
                       <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: color + '15', color: color + 'bb' }}>{t.subject}</span>
                     </button>
                   );
@@ -327,8 +327,8 @@ export default function AdminBulkGeneratePage() {
             disabled={selected.size === 0}
             style={{
               width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-              background: selected.size > 0 ? '#00e87a' : 'rgba(255,255,255,0.08)',
-              color: selected.size > 0 ? '#03080a' : 'rgba(255,255,255,0.3)',
+              background: selected.size > 0 ? '#00e87a' : 'var(--bg-secondary)',
+              color: selected.size > 0 ? '#03080a' : 'var(--muted)',
               fontSize: '15px', fontWeight: 800,
               cursor: selected.size > 0 ? 'pointer' : 'not-allowed',
               fontFamily: 'var(--font-ui)',
@@ -341,7 +341,7 @@ export default function AdminBulkGeneratePage() {
               : `Generate ${selected.size} lesson${selected.size !== 1 ? 's' : ''} ${autoPublish ? '& publish' : 'as drafts'}`}
           </button>
 
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '8px' }}>
+          <p style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'center', marginTop: '8px' }}>
             Generated one at a time — takes about {selected.size * 6} seconds
           </p>
         </>
@@ -350,7 +350,7 @@ export default function AdminBulkGeneratePage() {
       {/* Running state */}
       {running && (
         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '14px', color: 'var(--fg-secondary)', lineHeight: 1.6 }}>
             Generating lessons... do not close this page.
           </p>
         </div>
@@ -362,23 +362,34 @@ export default function AdminBulkGeneratePage() {
           <p style={{ fontSize: '15px', fontWeight: 700, color: doneCount === totalJobs ? '#00e87a' : '#EF9F27', marginBottom: '8px' }}>
             {doneCount === totalJobs ? `All ${doneCount} lessons generated!` : `${doneCount} done, ${errorCount} failed`}
           </p>
-          <button onClick={() => router.push('/gcse/admin')} style={{ padding: '9px 20px', borderRadius: '10px', border: 'none', background: '#fff', color: '#06080f', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+          <button onClick={() => router.push('/gcse/admin')} style={{ padding: '9px 20px', borderRadius: '10px', border: 'none', background: '#fff', color: 'var(--fg-secondary)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
             View in lesson manager
           </button>
         </div>
       )}
 
-      </Screen>
+      </Shell>
   );
 }
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#06080f', backgroundImage: 'radial-gradient(ellipse at top left, #0d1428 0%, #06080f 60%)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(0,232,122,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,0.02) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '560px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </main>
   );
 }
 
-const GHOST_BTN: React.CSSProperties = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '7px 14px', color: 'rgba(255,255,255,0.65)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+const GHOST_BTN: React.CSSProperties = { background: 'var(--bg-secondary)', border: '1px solid #fff', borderRadius: '8px', padding: '7px 14px', color: 'var(--fg-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' };
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 3rem', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', top: '-80px', right: '-80px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(88,204,2,0.06)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '680px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        {children}
+      </div>
+    </main>
+  );
+}
