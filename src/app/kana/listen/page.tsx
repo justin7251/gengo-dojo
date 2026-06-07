@@ -115,7 +115,7 @@ function KanaListen() {
   function choiceBorder(c: KanaChar) {
     if (answerState === 'unanswered') return 'var(--border-dark)';
     if (c.char === current.char) return '#1D9E75';
-    if (c.char === selected)     return '#E24B4A';
+    if (c.char === selected)     return 'var(--red)';
     return 'var(--border-dark)';
   }
   function choiceOpacity(c: KanaChar) {

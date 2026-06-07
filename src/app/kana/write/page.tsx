@@ -232,7 +232,7 @@ function KanaWrite() {
             height: '240px',
             borderRadius: '16px',
             background: '#1a1a1a',
-            border: '1px solid var(--border)',
+            border: '2px solid var(--border-dark)',
             cursor: 'crosshair',
             touchAction: 'none',
             display: 'block',
@@ -277,7 +277,7 @@ function KanaWrite() {
       {/* Mnemonic */}
       <div style={{
         padding: '10px 14px', background: 'var(--bg-secondary)',
-        border: '1px solid var(--border)', borderRadius: '10px',
+        border: '2px solid var(--border-dark)', borderRadius: '10px',
         fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6,
         marginBottom: '0.75rem',
       }}>
@@ -326,7 +326,7 @@ function Shell({ children, onBack, script }: { children: React.ReactNode; onBack
       </div>
       <div style={{
         width: '100%', maxWidth: '680px', background: 'var(--bg)',
-        border: '1px solid var(--border)', borderRadius: '20px', padding: '1.5rem 2rem',
+        border: '2px solid var(--border-dark)', borderRadius: '20px', padding: '1.5rem 2rem',
       }}>
         {children}
       </div>

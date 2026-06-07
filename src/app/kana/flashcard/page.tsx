@@ -191,7 +191,7 @@ function KanaFlashcard() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
             {([
-              { r: 'wrong', label: 'Again', sub: '1d',  color: '#E24B4A', bg: '#FCEBEB' },
+              { r: 'wrong', label: 'Again', sub: '1d',  color: 'var(--red)', bg: 'var(--red-light)' },
               { r: 'hard',  label: 'Hard',  sub: '3d',  color: '#BA7517', bg: '#FAEEDA' },
               { r: 'good',  label: 'Good',  sub: '7d',  color: '#0F6E56', bg: '#E1F5EE' },
               { r: 'easy',  label: 'Easy',  sub: '30d', color: '#185FA5', bg: '#E6F1FB' },
