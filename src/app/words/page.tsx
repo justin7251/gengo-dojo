@@ -80,7 +80,9 @@ function WordList() {
     const prev = progress[word.id];
     if (prev) {
       await rateWord(uid, word.id, rating, prev, targetLang, nativeLang);
-      setProgress(p => ({ ...p, [word.id]: { ...prev, correct: prev.correct + 1, interval: rating, nextReview: Date.now() + (rating === 'easy' ? 30 * 86400000 : 7 * 86400000), lastReviewed: Date.now() } }));
+      // Optimistic update with correct interval number matching rateWord logic
+      const nextMs = rating === 'easy' ? 30 * 86400000 : 7 * 86400000;
+      setProgress(p => ({ ...p, [word.id]: { ...prev, correct: prev.correct + 1, interval: rating, nextReview: Date.now() + nextMs, lastReviewed: Date.now() } }));
     }
     setReviewing(false);
   }

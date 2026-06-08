@@ -294,3 +294,35 @@ export async function getStreakHistory(uid: string): Promise<string[]> {
   if (!snap.exists()) return [];
   return (snap.data() as DailyProgress).streakHistory ?? [];
 }
+
+// ── Seed streak history for existing users ────────────
+// Called once if streakHistory is empty but streakDays > 0.
+// Back-fills the last N consecutive days so the calendar isn't all grey.
+export async function seedStreakHistory(uid: string, streakDays: number): Promise<string[]> {
+  if (streakDays <= 0) return [];
+  const today    = new Date();
+  const history: string[] = [];
+  // Fill days from (today - streakDays + 1) up to and including yesterday
+  // (today gets marked when they complete tasks)
+  for (let i = streakDays - 1; i >= 1; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    history.push(d.toISOString().split('T')[0]);
+  }
+  const snap = await getDoc(doc(db, 'daily_progress', uid));
+  if (snap.exists()) {
+    const data = snap.data() as DailyProgress;
+    if ((data.streakHistory ?? []).length > 0) return data.streakHistory; // already seeded
+    const updated = { ...data, streakHistory: history };
+    await setDoc(doc(db, 'daily_progress', uid), updated);
+    return history;
+  } else {
+    const fresh: DailyProgress = {
+      date:           todayStr(),
+      completed:      {},
+      streakHistory:  history,
+    };
+    await setDoc(doc(db, 'daily_progress', uid), fresh);
+    return history;
+  }
+}

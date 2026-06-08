@@ -106,15 +106,18 @@ export interface Progress {
 
 // ── User profile ──────────────────────────────────────
 export interface UserProfile {
-  uid:          string;
-  email:        string;
-  interests:    string[];
-  nativeLang:   NativeLang;
-  targetLang:   TargetLang;
-  level:        'beginner' | 'intermediate' | 'advanced';
-  createdAt:    number;
-  onboarded?:   boolean;
-  onboardedAt?: string;
+  uid:               string;
+  email:             string;
+  interests:         string[];
+  nativeLang:        NativeLang;
+  targetLang:        TargetLang;
+  level:             'beginner' | 'intermediate' | 'advanced';
+  createdAt:         number;
+  onboarded?:        boolean;
+  onboardedAt?:      string;
+  selectedSubjects?: string[];   // GCSE subjects picked at onboarding
+  yearGroup?:        string;     // e.g. 'year11'
+  weakTopics?:       string[];   // topic IDs flagged as difficult
 }
 
 // ── SRS rating ────────────────────────────────────────
