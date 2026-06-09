@@ -210,7 +210,7 @@ main { position: relative; z-index: 1; }
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
-  animation: shineSweep 2s ease-in-out infinite;
+  animation: shineSweep 2.5s ease-in-out 0.8s infinite;
 }
 
 /* ── Pills ── */
@@ -326,26 +326,26 @@ input[type="text"]:focus, textarea:focus {
 }
 @keyframes correctPop {
   0%   { transform: scale(1); }
-  30%  { transform: scale(1.08); }
-  60%  { transform: scale(0.97); }
+  35%  { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 @keyframes wrongShake {
   0%,100% { transform: translateX(0); }
-  20%     { transform: translateX(-7px); }
-  40%     { transform: translateX(7px); }
+  20%     { transform: translateX(-8px); }
+  40%     { transform: translateX(8px); }
   60%     { transform: translateX(-5px); }
   80%     { transform: translateX(5px); }
+}
+@keyframes xpPop {
+  0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+  40%  { opacity: 1; transform: translateY(-24px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-44px) scale(1); }
 }
 @keyframes float {
   0%,100% { transform: translateY(0); }
   50%     { transform: translateY(-6px); }
 }
-@keyframes xpPop {
-  0%   { opacity: 0; transform: translateY(0) scale(0.6); }
-  40%  { opacity: 1; transform: translateY(-20px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-40px) scale(1); }
-}
+
 @keyframes lineGrow {
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
@@ -370,3 +370,26 @@ input[type="text"]:focus, textarea:focus {
 ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+
+/* ── Button press feel ── */
+.btn:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--border-dark);
+}
+.btn-primary:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--green-dark);
+}
+.btn-blue:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--blue-dark);
+}
+.btn-red:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--red-dark);
+}
+.btn-orange:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--orange-dark);
+}
