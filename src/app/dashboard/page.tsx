@@ -17,6 +17,7 @@ import {
   Word, Progress, UserProfile,
   NativeLang, TargetLang,
   NATIVE_LANGUAGES, TARGET_LANGUAGES,
+  isProUser,
 } from '@/lib/types';
 import { isDue, isMastered } from '@/lib/srs';
 import { getAgentProfile, createAgentProfile } from '@/lib/agent';
@@ -344,6 +345,9 @@ function Dashboard() {
             { emoji: '🗺️', label: 'Scene',      sub: 'Reading in context',                       route: '/scene',      color: 'var(--green)',  bg: 'var(--green-light)',  taskId: null },
             ...(profile?.targetLang === 'ja' || profile?.targetLang === 'ko'
               ? [{ emoji: 'あ', label: profile.targetLang === 'ja' ? 'Kana' : 'Hangul', sub: 'Characters', route: '/kana', color: 'var(--green)', bg: 'var(--green-light)', taskId: null }]
+              : []),
+            ...(isProUser(profile)
+              ? [{ emoji: '📚', label: 'GCSE Prep', sub: 'AI exam practice', route: '/gcse', color: 'var(--purple)', bg: 'var(--purple-light)', taskId: null }]
               : []),
           ].map((tool, i) => {
             const taskDone = tool.taskId && dailyProgress?.completed[tool.taskId];

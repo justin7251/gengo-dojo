@@ -118,6 +118,14 @@ export interface UserProfile {
   selectedSubjects?: string[];   // GCSE subjects picked at onboarding
   yearGroup?:        string;     // e.g. 'year11'
   weakTopics?:       string[];   // topic IDs flagged as difficult
+  isPro?:            boolean;    // manually-set flag gating premium features (e.g. GCSE Prep)
+}
+
+// ── Pro / premium access ───────────────────────────────
+// Centralised here so the "what counts as pro" check has one
+// home — easy to extend later (trial windows, plan tiers, etc.)
+export function isProUser(profile?: UserProfile | null): boolean {
+  return !!profile?.isPro;
 }
 
 // ── SRS rating ────────────────────────────────────────
